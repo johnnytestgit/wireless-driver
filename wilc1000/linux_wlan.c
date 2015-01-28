@@ -55,7 +55,7 @@ unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xb2};
 
 #if defined(CUSTOMER_PLATFORM)
 /*
- DOTO : Write power control functions as customer platform.
+ TODO : Write power control functions as customer platform.
 */
 #else
 
@@ -546,7 +546,7 @@ static int init_irq(linux_wlan_t* p_nic){
 		    (gpio_direction_input(GPIO_NUM) == 0)) {
 #if defined(CUSTOMER_PLATFORM)
 /*
- DOTO : save the registerd irq number to the private wlic context in kernel.
+ TODO : save the registerd irq number to the private wilc context in kernel.
 
   ex) nic->dev_irq_num = gpio_to_irq(GPIO_NUM);
 */

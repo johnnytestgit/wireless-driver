@@ -136,7 +136,7 @@ extern atomic_t DEBUG_LEVEL;
 
 #elif defined(CUSTOMER_PLATFORM)
 /*
- DOTO : specify MODALIAS name and GPIO number. This is certainly necessary for SPI interface.
+ TODO : specify MODALIAS name and GPIO number. This is certainly necessary for SPI interface.
 
 ex)
 #define MODALIAS  "WILC_SPI"

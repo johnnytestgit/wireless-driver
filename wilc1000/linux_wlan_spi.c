@@ -22,7 +22,7 @@
   #define MAX_SPEED 24000000 //4000000
  #elif defined(CUSTOMER_PLATFORM)
  /*
-  DOTO : define Clock speed under 48M.
+  TODO : define Clock speed under 48M.
  
  ex)
   #define MIN_SPEED 24000000
@@ -59,10 +59,20 @@ static int __exit wilc_bus_remove(struct spi_device* spi){
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id wilc1000_of_match[] = {
+	{ .compatible = "atmel,wilc_spi", },
+	{}
+};
+MODULE_DEVICE_TABLE(of, wilc1000_of_match);
+#endif
 
 struct spi_driver wilc_bus __refdata = {
 		.driver = {
 				.name = MODALIAS,
+#ifdef CONFIG_OF
+				.of_match_table = wilc1000_of_match,
+#endif
 		},
 		.probe =  wilc_bus_probe,
 		.remove = __exit_p(wilc_bus_remove),

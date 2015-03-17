@@ -695,7 +695,7 @@ WILC_Sint32 CoreConfiguratorInit(void)
 	gps8ConfigPacket = (WILC_Sint8*)WILC_MALLOC(MAX_PACKET_BUFF_SIZE);
 	if(gps8ConfigPacket == NULL)
 	{
-		WILC_ERROR("failed in gps8ConfigPacket allocation \n");
+		PRINT_ER("failed in gps8ConfigPacket allocation \n");
 		s32Error = WILC_NO_MEM;
 		goto _fail_;
 	}
@@ -806,7 +806,7 @@ WILC_Sint32 ParseNetworkInfo(WILC_Uint8* pu8MsgBuffer, tstrNetworkInfo** ppstrNe
     /* Check whether the received message type is 'N' */
     if('N' != u8MsgType)
     {
-        WILC_ERROR("Received Message format incorrect.\n");
+        PRINT_ER("Received Message format incorrect.\n");
         WILC_ERRORREPORT(s32Error, WILC_FAIL);
     }
 	
@@ -1059,8 +1059,6 @@ WILC_Sint32 ParseSurveyResults(WILC_Uint8 ppu8RcvdSiteSurveyResults[][MAX_SURVEY
 			u32SurveyResultsCount++;
 		}
 	}
-	
-	//WILC_PRINTF("u32SurveyResultsCount = %d \n", u32SurveyResultsCount);
 
 	pstrSurveyResults = (wid_site_survey_reslts_s*)WILC_MALLOC(u32SurveyResultsCount * sizeof(wid_site_survey_reslts_s));
 	if(pstrSurveyResults == NULL)
@@ -1081,8 +1079,6 @@ WILC_Sint32 ParseSurveyResults(WILC_Uint8 ppu8RcvdSiteSurveyResults[][MAX_SURVEY
 		
 		//TODO: mostafa: pu8BufferPtr[1] contains the fragment num		
 		u8ReadSurveyResFragNum = pu8BufferPtr[1];
-		
-		//WILC_PRINTF("Read fragment num value in Survey Result Fragmnet %d = %d \n", i, u8ReadSurveyResFragNum);
 
 		pu8BufferPtr += 2;
 
@@ -1658,7 +1654,7 @@ WILC_Sint32 further_process_response(WILC_Uint8*   resp,
 		 }
 		else
 		{
-			WILC_ERROR("allocated WID buffer length is smaller than the received WID Length \n");
+			PRINT_ER("allocated WID buffer length is smaller than the received WID Length \n");
 			retval = -2;
 		}
 		
@@ -1716,7 +1712,7 @@ WILC_Sint32 further_process_response(WILC_Uint8*   resp,
 
 		if(/*fp_bin == NULL*/0)
 		{
-		    WILC_PRINTF("Error: Could not open wid_response.bin for write\n");
+		    PRINT_ER("Error: Could not open wid_response.bin for write\n");
 		    return -2;
 		}
 
@@ -1866,7 +1862,7 @@ WILC_Sint32 ParseWriteResponse(WILC_Uint8* pu8RespBuffer)
     /* Check whether the received frame is a valid response */
     if(RESP_MSG_TYPE != pu8RespBuffer[0])
     {
-        WILC_ERROR("Received Message format incorrect.\n");
+        PRINT_ER("Received Message format incorrect.\n");
         return WILC_FAIL;
     }
 
@@ -1997,7 +1993,7 @@ WILC_Sint32 CreateConfigPacket(WILC_Sint8* ps8packet, WILC_Sint32*ps32PacketLeng
 				pstrWIDs[u32idx].ps8WidVal, pstrWIDs[u32idx].s32ValueSize);
 			break;
 		default:
-			WILC_ERROR("ERROR: Check Config database\n");
+			PRINT_ER("ERROR: Check Config database\n");
 		}
 	}
                     
@@ -2014,7 +2010,6 @@ WILC_Sint32 ConfigWaitResponse(WILC_Char* pcRespBuffer, WILC_Sint32 s32MaxRespBu
 	/*removed to caller function*/
 	/*gstrConfigPktInfo.pcRespBuffer = pcRespBuffer;
 	gstrConfigPktInfo.s32MaxRespBuffLen = s32MaxRespBuffLen;
-	WILC_PRINTF("GLOBAL =bRespRequired =%d\n", bRespRequired);
 	gstrConfigPktInfo.bRespRequired = bRespRequired;*/
 	
 	
@@ -2140,7 +2135,7 @@ WILC_Sint32 ConfigProvideResponse(WILC_Char* pcRespBuffer, WILC_Sint32 s32RespLe
 		{
 			WILC_memcpy(gstrConfigPktInfo.pcRespBuffer, pcRespBuffer, gstrConfigPktInfo.s32MaxRespBuffLen);
 			gstrConfigPktInfo.s32BytesRead = gstrConfigPktInfo.s32MaxRespBuffLen;
-			WILC_ERROR("BusProvideResponse() Response greater than the prepared Buffer Size \n");
+			PRINT_ER("BusProvideResponse() Response greater than the prepared Buffer Size \n");
 		}
 		
 		WILC_SemaphoreRelease(&SemHandlePktResp, WILC_NULL);
@@ -2185,7 +2180,6 @@ WILC_Sint32 ConfigPktReceived(WILC_Uint8* pu8RxPacket, WILC_Sint32 s32RxPacketLe
 	    	}
 		case 'I':
 		{
-			//WILC_ERROR("ConfigPktReceived(): 'I' msg type is received at the Core Configurator and it is not supported yet \n");
 				GnrlAsyncInfoReceived(pu8RxPacket, s32RxPacketLen);
 	        	break;
 	    	}
@@ -2197,7 +2191,7 @@ WILC_Sint32 ConfigPktReceived(WILC_Uint8* pu8RxPacket, WILC_Sint32 s32RxPacketLe
 	    	}
 	    	default:
 		{
-			WILC_ERROR("ConfigPktReceived(): invalid received msg type at the Core Configurator \n");
+			PRINT_ER("ConfigPktReceived(): invalid received msg type at the Core Configurator \n");
 		}
 	        
 	}   
@@ -2262,22 +2256,22 @@ WILC_Sint32 SendConfigPkt(WILC_Uint8 u8Mode, tstrWID* pstrWIDs,
 	WILC_Sint32 counter = 0,ret = 0;
 	if(gpstrWlanOps == NULL)
 	{
-		PRINT_INFO(CORECONFIG_DBG,"Net Dev is still not initialized\n");
+		PRINT_D(CORECONFIG_DBG,"Net Dev is still not initialized\n");
 		return 1;
 	}
 	else
 	{
-		//WILC_PRINTF("Net Dev is initialized\n");
+		PRINT_D(CORECONFIG_DBG,"Net Dev is initialized\n");
 	}
 	if( gpstrWlanOps->wlan_cfg_set == NULL ||
 			gpstrWlanOps->wlan_cfg_get == NULL)
 	{
-		PRINT_INFO(CORECONFIG_DBG,"Set and Get is still not initialized\n");
-				return 1;
+		PRINT_D(CORECONFIG_DBG,"Set and Get is still not initialized\n");
+			return 1;
 	}
 	else
 	{
-		//WILC_PRINTF("SET is initialized\n");
+		PRINT_D(CORECONFIG_DBG,"SET is initialized\n");
 	}
 	if(u8Mode == GET_CFG)
 	{

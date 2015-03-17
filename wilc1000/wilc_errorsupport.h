@@ -10,6 +10,8 @@
 *  @version		1.0
 */
 
+#include "linux_wlan_common.h"
+
 /* Psitive Numbers to indicate sucess with special status */
 #define	WILC_ALREADY_EXSIT	+100	/** The requested object already exists */
 
@@ -42,13 +44,13 @@ typedef WILC_Sint32 WILC_ErrNo;
 #define WILC_ERRORCHECK(__status__) do{\
 	if(WILC_IS_ERR(__status__))\
 	{\
-		WILC_ERROR("WILC_ERRORCHECK(%d)\n", __status__);\
+		PRINT_ER("PRINT_ER(%d)\n", __status__);\
 		goto ERRORHANDLER;\
 	}\
 }while(0)
 	
 #define WILC_ERRORREPORT(__status__, __err__) do{\
-	WILC_ERROR("WILC_ERRORREPORT(%d)\n", __err__);\
+	PRINT_ER("PRINT_ER(%d)\n", __err__);\
 	__status__ = __err__;\
 	goto ERRORHANDLER;\
 }while(0)

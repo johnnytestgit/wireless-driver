@@ -98,10 +98,6 @@ void WILC_WFI_monitor_rx(uint8_t *buff, uint32_t size)
 	{
 		
 		// hostapd callback mgmt frame
-		
-		//if(INFO || buff[0] == 0x10 || buff[0] == 0xb0)
-		 	//PRINT_D(HOSTAPD_DBG,"In monitor interface callback receive function\n");
-	
 
 		skb = dev_alloc_skb(size+sizeof(struct wilc_wfi_radiotap_cb_hdr));
 		if(skb == NULL)
@@ -139,16 +135,6 @@ void WILC_WFI_monitor_rx(uint8_t *buff, uint32_t size)
 	else
 	{
 
-		// normal  mgmt frame
-		
-		//if(INFO || buff[0] == 0x00 || buff[0] == 0xb0)
-	//	{	
-			//PRINT_D(HOSTAPD_DBG,"In monitor interface receive function , length = %d\n",size);
-			//for(i=0;i<size;i++)
-				//PRINT_D(HOSTAPD_DBG,"Mon RxData[%d] = %02x\n",i,buff[i]);
-	//	}
-		
-	
 		skb = dev_alloc_skb(size+sizeof(struct wilc_wfi_radiotap_hdr));
 
 		if(skb == NULL)
@@ -162,7 +148,6 @@ void WILC_WFI_monitor_rx(uint8_t *buff, uint32_t size)
 	          //      return;
 	       
 		memcpy(skb_put(skb,size),buff, size);
-		//printk("--radiotap header--\n",sizeof(*hdr));
 	        hdr = (struct wilc_wfi_radiotap_hdr *) skb_push(skb, sizeof(*hdr));
 		memset(hdr, 0, sizeof(struct wilc_wfi_radiotap_hdr));
 	        hdr->hdr.it_version = 0;//PKTHDR_RADIOTAP_VERSION;
@@ -213,9 +198,9 @@ static void mgmt_tx_complete(void* priv, int status){
 	 
 	if(status == 1){
 		if(INFO || buf[0] == 0x10 || buf[0] == 0xb0)
-		PRINT_D(HOSTAPD_DBG,"Packet sent successfully - Size = %d - Address = %p.\n",pv_data->size,pv_data->buff);
+			PRINT_INFO(HOSTAPD_DBG,"Packet sent successfully - Size = %d - Address = %p.\n",pv_data->size,pv_data->buff);
 	}else{
-			PRINT_D(HOSTAPD_DBG,"Couldn't send packet - Size = %d - Address = %p.\n",pv_data->size,pv_data->buff);
+			PRINT_INFO(HOSTAPD_DBG,"Couldn't send packet - Size = %d - Address = %p.\n",pv_data->size,pv_data->buff);
 		}
 		
 
@@ -268,7 +253,6 @@ static int mon_mgmt_tx(struct net_device *dev, const u8 *buf, size_t len)
 		}
 	nic =netdev_priv(dev);
 	
-	//WILC_PRINTF("--IN mon_mgmt_tx--\n");
 	netif_stop_queue(dev);	
 	mgmt_tx = (struct tx_complete_mon_data*)kmalloc(sizeof(struct tx_complete_mon_data),GFP_ATOMIC);
 	if(mgmt_tx == NULL){
@@ -294,8 +278,6 @@ static int mon_mgmt_tx(struct net_device *dev, const u8 *buf, size_t len)
 	#ifndef WILC_FULLY_HOSTING_AP
 	memcpy(mgmt_tx->buff,buf,len);
 	#else
-	//printk("sizeof(struct tx_complete_mon_data*) = %d\n",sizeof(struct tx_complete_mon_data*));
-	//printk("len = %d, mgmt_tx=%x\n",len,mgmt_tx);
 	memcpy(mgmt_tx->buff,buf,len-sizeof(struct tx_complete_mon_data*));
 	memcpy((mgmt_tx->buff)+(len-sizeof(struct tx_complete_mon_data*)),&mgmt_tx,sizeof(struct tx_complete_mon_data*));
 
@@ -307,7 +289,6 @@ static int mon_mgmt_tx(struct net_device *dev, const u8 *buf, size_t len)
 	
 	#endif //WILC_FULLY_HOSTING_AP
 
-	//printk("--IN mon_mgmt_tx: Sending MGMT Pkt to tx queue--\n");
 	g_linux_wlan->oup.wlan_add_mgmt_to_tx_que(mgmt_tx,mgmt_tx->buff,mgmt_tx->size,mgmt_tx_complete);
 
 	netif_wake_queue(dev);
@@ -333,7 +314,6 @@ static netdev_tx_t WILC_WFI_mon_xmit(struct sk_buff *skb,
 	 struct sk_buff *skb2;
 	 struct wilc_wfi_radiotap_cb_hdr *cb_hdr;
 
-	//PRINT_D(HOSTAPD_DBG,"Monitor xmit function b4\n");
 	/* Bug 4601 */
 	if(wilc_wfi_mon == NULL)
 		return WILC_FAIL;
@@ -358,7 +338,6 @@ static netdev_tx_t WILC_WFI_mon_xmit(struct sk_buff *skb,
 	}
 	/* skip the radiotap header */
 	PRINT_INFO(HOSTAPD_DBG,"Radiotap len: %d\n", rtap_len);
-	//if(INFO)
 
 	if(INFO)
 	{
@@ -417,13 +396,11 @@ static netdev_tx_t WILC_WFI_mon_xmit(struct sk_buff *skb,
 	#elif USE_WIRELESS
 	//Identify if Ethernet or MAC header (data or mgmt)
 	memcpy(srcAdd,& skb->data[11],6);
-	//WILC_PRINTF("SRC/BSSID\n");
 	memcpy(bssid, &skb->data[17],6);
 	//if source address and bssid fields are equal>>Mac header
 	/*send it to mgmt frames handler */
 	if(!(memcmp(srcAdd,bssid,6)))
 	{
-		//WILC_PRINTF("--MGMT PKT in mon_xmit--\n");
 		mon_mgmt_tx(mon_priv->real_ndev, skb->data, skb->len);
 		dev_kfree_skb(skb);
 	}
@@ -677,7 +654,6 @@ int WILC_WFI_deinit_mon_interface()
 		}
 		PRINT_D(HOSTAPD_DBG,"Unregister netdev\n");
 		unregister_netdev(wilc_wfi_mon);
-		//WILC_PRINTF("Free Netdev\n");
 		//free_netdev(wilc_wfi_mon);
 		
 		if (rollback_lock) 

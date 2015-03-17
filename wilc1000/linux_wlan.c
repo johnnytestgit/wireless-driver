@@ -260,11 +260,11 @@ void dump_logs()
 		if(DebugBuffer[0])
 			{
 				DebugBuffer[DEGUG_BUFFER_LENGTH]=0;
-				printk("early printed\n");	
-				printk(ps8current+1);
+				PRINT_INFO(GENERIC_DBG,"early printed\n");
+				PRINT_D(GENERIC_DBG,ps8current+1);
 				ps8current[1]=0;
-				printk("latest printed\n");
-				printk(DebugBuffer);
+				PRINT_INFO(GENERIC_DBG,"latest printed\n");
+				PRINT_D(GENERIC_DBG,DebugBuffer);
 				DebugBuffer[0]=0;
 				ps8current=DebugBuffer;
 			}
@@ -280,7 +280,7 @@ static int DebuggingThreadTask(void* vp)
 	while(1){
 			while(!WatchDogdebuggerCounter)
 			{
-				printk("Debug Thread Running %d\n",timeNo);
+				PRINT_D(GENERIC_DBG,"Debug Thread Running %d\n",timeNo);
 				WatchDogdebuggerCounter=1;
 				msleep(10000);
 			}
@@ -308,7 +308,7 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
 
 	if(dev_iface == NULL || dev_iface->ifa_dev == NULL || dev_iface->ifa_dev->dev == NULL)
 	{
-		WILC_PRINTF("dev_iface = NULL\n");
+		PRINT_D(GENERIC_DBG,"dev_iface = NULL\n");
 		return NOTIFY_DONE;
 	}
 
@@ -321,31 +321,31 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
 	dev  = (struct net_device *)dev_iface->ifa_dev->dev;
 	if(dev->ieee80211_ptr == NULL || dev->ieee80211_ptr->wiphy == NULL)
 	{
-		WILC_PRINTF("No Wireless registerd\n");
+		PRINT_D(GENERIC_DBG,"No Wireless registerd\n");
 		return NOTIFY_DONE;
 	}
     priv = wiphy_priv(dev->ieee80211_ptr->wiphy);
 	if(priv == NULL)
 	{
-		WILC_PRINTF("No Wireless Priv\n");
+		PRINT_D(GENERIC_DBG,"No Wireless Priv\n");
 		return NOTIFY_DONE;
 	}
 	pstrWFIDrv = (tstrWILC_WFIDrv *)priv->hWILCWFIDrv;
 	nic = netdev_priv(dev);
 	if(nic == NULL || pstrWFIDrv == NULL)
 	{
-		WILC_PRINTF("No Wireless Priv\n");
+		PRINT_D(GENERIC_DBG,"No Wireless Priv\n");
 		return NOTIFY_DONE;
 	}
 
-	printk("dev_state_ev_handler +++\n");	// tony
+	PRINT_INFO(GENERIC_DBG,"dev_state_ev_handler +++\n"); // tony
 
 	switch (event) 
 	{
     		case NETDEV_UP:
-			printk("dev_state_ev_handler event=NETDEV_UP %p\n",dev);	// tony
+			PRINT_D(GENERIC_DBG,"dev_state_ev_handler event=NETDEV_UP %p\n",dev); // tony
 
-			printk("\n ============== IP Address Obtained ===============\n\n");
+			PRINT_INFO(GENERIC_DBG,"\n ============== IP Address Obtained ===============\n\n");
 
 		
 			/*If we are in station mode or client mode*/
@@ -365,15 +365,15 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
             PRINT_D(GENERIC_DBG, "[%s] Up IP\n", dev_iface->ifa_label);
 
 			pIP_Add_buff = (char *) (&(dev_iface->ifa_address));
-			printk("IP add=%d:%d:%d:%d \n",pIP_Add_buff[0],pIP_Add_buff[1],pIP_Add_buff[2],pIP_Add_buff[3]);
+			PRINT_D(GENERIC_DBG,"IP add=%d:%d:%d:%d \n",pIP_Add_buff[0],pIP_Add_buff[1],pIP_Add_buff[2],pIP_Add_buff[3]);
 			s32status = host_int_setup_ipaddress((WILC_WFIDrvHandle)pstrWFIDrv, pIP_Add_buff, nic->u8IfIdx);
 
 			break;
 
 		case NETDEV_DOWN:
-			printk("dev_state_ev_handler event=NETDEV_DOWN %p\n",dev);	// tony
+			PRINT_D(GENERIC_DBG,"dev_state_ev_handler event=NETDEV_DOWN %p\n",dev); 	// tony
 
-			printk("\n ============== IP Address Released ===============\n\n");
+			PRINT_INFO(GENERIC_DBG,"\n ============== IP Address Released ===============\n\n");
 			if(nic->iftype==STATION_MODE||nic->iftype==CLIENT_MODE)	
 			{
 				pstrWFIDrv->IFC_UP=0;
@@ -389,13 +389,14 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
 			PRINT_D(GENERIC_DBG, "[%s] Down IP\n", dev_iface->ifa_label);
 
 			pIP_Add_buff = null_ip;
-			printk("IP add=%d:%d:%d:%d \n",pIP_Add_buff[0],pIP_Add_buff[1],pIP_Add_buff[2],pIP_Add_buff[3]);
+			PRINT_D(GENERIC_DBG, "IP add=%d:%d:%d:%d \n",pIP_Add_buff[0],pIP_Add_buff[1],pIP_Add_buff[2],pIP_Add_buff[3]);
+			
 			s32status = host_int_setup_ipaddress((WILC_WFIDrvHandle)pstrWFIDrv, pIP_Add_buff, nic->u8IfIdx);
 
 			break;
 				
 		default:
-			printk("dev_state_ev_handler event=default\n");	// tony
+			PRINT_INFO(GENERIC_DBG,"dev_state_ev_handler event=default\n"); // tony
 			PRINT_INFO(GENERIC_DBG, "[%s] unknown dev event: %lu\n", dev_iface->ifa_label, event);
 
 			break;
@@ -546,7 +547,7 @@ static int init_irq(linux_wlan_t* p_nic){
 		    (gpio_direction_input(GPIO_NUM) == 0)) {
 #if defined(CUSTOMER_PLATFORM)
 /*
- TODO : save the registerd irq number to the private wilc context in kernel.
+ TODO : save the registerd irq number to the private wlic context in kernel.
 
   ex) nic->dev_irq_num = gpio_to_irq(GPIO_NUM);
 */
@@ -624,10 +625,7 @@ static void linux_wlan_atomic_msleep(uint32_t msc){
 	mdelay(msc);	
 }
 static void linux_wlan_dbg(uint8_t *buff){
-	printk(buff);
-#if defined (WILC_DEBUGFS)
-	kmsgdump_write(buff);
-#endif
+	PRINT_D(INIT_DBG,"%d\n", *buff);
 }
 
 static void* linux_wlan_malloc_atomic(uint32_t sz){
@@ -857,14 +855,13 @@ struct net_device * GetIfHandler(uint8_t* pMacHeader)
 		if(!memcmp(Bssid1,g_linux_wlan->strInterfaceInfo[i].aBSSID,ETH_ALEN) || 
 			!memcmp(Bssid,g_linux_wlan->strInterfaceInfo[i].aBSSID,ETH_ALEN))
 		{
-			//printk("Ctx [%x]\n",g_linux_wlan->strInterfaceInfo[i].wilc_netdev);
 			return g_linux_wlan->strInterfaceInfo[i].wilc_netdev;
 		}		
 	}
-	printk("Invalide handle\n");
+	PRINT_INFO(INIT_DBG,"Invalide handle\n");
 	for(i=0;i<25;i++)
 	{
-		printk("%02x ",pMacHeader[i]);
+		PRINT_D(INIT_DBG,"%02x ",pMacHeader[i]);
 	}
 	Bssid  = pMacHeader+18;
 	Bssid1 = pMacHeader+12;
@@ -873,11 +870,11 @@ struct net_device * GetIfHandler(uint8_t* pMacHeader)
 		if(!memcmp(Bssid1,g_linux_wlan->strInterfaceInfo[i].aBSSID,ETH_ALEN) || 
 			!memcmp(Bssid,g_linux_wlan->strInterfaceInfo[i].aBSSID,ETH_ALEN))
 		{
-			printk("Ctx [%p]\n",g_linux_wlan->strInterfaceInfo[i].wilc_netdev);
+			PRINT_D(INIT_DBG,"Ctx [%p]\n",g_linux_wlan->strInterfaceInfo[i].wilc_netdev);
 			return g_linux_wlan->strInterfaceInfo[i].wilc_netdev;
 		}		
 	}
-	printk("\n");
+	PRINT_INFO(INIT_DBG,"\n");
 	return NULL;
 }
 
@@ -885,12 +882,13 @@ int linux_wlan_set_bssid(struct net_device * wilc_netdev,uint8_t * pBSSID)
 {
 	int i = 0;
 	int ret = -1;
-	printk("set bssid on[%p]\n",wilc_netdev);
+	
+	PRINT_D(INIT_DBG,"set bssid on[%p]\n",wilc_netdev);
 	for(i=0;i<g_linux_wlan->u8NoIfcs;i++)
 	{
 		if(g_linux_wlan->strInterfaceInfo[i].wilc_netdev == wilc_netdev)
 		{
-			printk("set bssid [%x][%x][%x]\n",pBSSID[0],pBSSID[1],pBSSID[2]);
+			PRINT_D(INIT_DBG,"set bssid [%x][%x][%x]\n",pBSSID[0],pBSSID[1],pBSSID[2]);
 			memcpy(g_linux_wlan->strInterfaceInfo[i].aBSSID,pBSSID,6);
 			ret = 0;
 			break;
@@ -1106,7 +1104,7 @@ static int linux_wlan_start_firmware(perInterface_wlan_t* nic){
 
 		if(timeout--)
 		{
-			printk("repeat power cycle[%d]",timeout);
+			PRINT_D(INIT_DBG,"repeat power cycle[%d]",timeout);
 			ret = repeat_power_cycle(nic);
 		}
 		else
@@ -1186,7 +1184,7 @@ static int linux_wlan_init_test_config(struct net_device *dev, linux_wlan_t* p_n
 	
 	if(g_linux_wlan->oup.wlan_cfg_set == NULL)
 	{
-		printk("Null p[ointer\n");
+		PRINT_D(INIT_DBG,"Null p[ointer\n");
 		goto _fail_;
 	}
 
@@ -1446,7 +1444,7 @@ void wilc1000_wlan_deinit(linux_wlan_t *nic) {
 	if(g_linux_wlan->wilc1000_initialized)
 	{
 
-		PRINT_D(INIT_DBG,"Deinitializing wilc1000  ...\n");
+		printk("Deinitializing wilc1000  ...\n");
 		
 		if(nic == NULL){
 			PRINT_ER("nic is NULL\n");
@@ -1782,47 +1780,59 @@ static void wlan_deinitialize_threads(linux_wlan_t* nic){
 }
 
 #ifdef STATIC_MACADDRESS
+const char *path_string[] = {
+	"/etc/wlan",
+	"/data/wlan",
+};
+
 static int linux_wlan_read_mac_addr(void* vp)
 {
 	int ret = 0;
 	struct file *fp = (struct file *)-ENOENT;
 	mm_segment_t old_fs;
 	loff_t pos = 0;
+	int index;
+	int array_size = sizeof(path_string)/sizeof(path_string[0]);
 
 	/* change to KERNEL_DS address limit */
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 
-      do {
-		fp = filp_open("/etc/wlan", O_WRONLY, 0640);
+	for (index = 0 ; index < array_size ; index++ ) {
+		fp = filp_open(path_string[index], O_WRONLY, 0640);
 		if (!fp) {
 			ret = -1;
 			goto exit;
 		}
-		
+
 		/*No such file or directory */
 		if (IS_ERR(fp) || !fp->f_op) {
-                   get_random_bytes(&mac_add[3], 3);
-
+			get_random_bytes(&mac_add[3], 3);
 			/* open file to write */
-			fp = filp_open("/etc/wlan", O_WRONLY|O_CREAT, 0640);
-			if (!fp) {
-				ret = -1;
-				goto exit;
-			}
+			fp = filp_open(path_string[index], O_WRONLY|O_CREAT, 0640);
 			
-			/* Write buf to file */
-			fp->f_op->write(fp, mac_add, 6, &pos);
-
-		}else{
+			if (!fp || IS_ERR(fp)) {
+				ret = -1;
+				continue;
+			} else {
+				/* write buf to file */
+				fp->f_op->write(fp, mac_add, 6, &pos);
+				break;
+			}
+		} else {
 			/* read file to buf */
 			fp->f_op->read(fp, mac_add, 6, &pos);
+			break;
 		}
-	}while(0);
+	}
+	
+	if (index == array_size) {
+		PRINT_ER("random MAC\n");
+	}
 
 exit:	
-	  if (fp) {
-       filp_close(fp,NULL);
+	  if (fp && !IS_ERR(fp)) {
+		filp_close(fp,NULL);
 	 }
 	  
     set_fs(old_fs);
@@ -2028,7 +2038,7 @@ int wilc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 					WID_FIRMWARE_VERSION,
 					Firmware_ver,sizeof(Firmware_ver));
 			Firmware_ver[size] = '\0';
-			printk("***** Firmware Ver = %s  *******\n",Firmware_ver);
+			PRINT_D(INIT_DBG,"***** Firmware Ver = %s  *******\n",Firmware_ver);
 		}
 		/* Initialize firmware with default configuration */
 		ret = linux_wlan_init_test_config(dev, g_linux_wlan);
@@ -2121,7 +2131,7 @@ int mac_open(struct net_device *ndev){
 	
 	nic = netdev_priv(ndev);
 	priv = wiphy_priv(nic->wilc_netdev->ieee80211_ptr->wiphy);
-	printk("MAC OPEN[%p]\n",ndev);
+	PRINT_D(INIT_DBG,"MAC OPEN[%p]\n",ndev);
 
 	#ifdef USE_WIRELESS
 	ret = WILC_WFI_InitHostInt(ndev);
@@ -2284,7 +2294,7 @@ static void wilc_set_multicast_list(struct net_device *dev)
  		return;
 	
 	PRINT_D(INIT_DBG,"Setting Multicast List. \n");
-	printk("dev->mc_count = %d\n",dev->mc_count);
+	PRINT_D(INIT_DBG,"dev->mc_count = %d\n",dev->mc_count);
 	
     if (dev->flags & IFF_PROMISC) 
     {
@@ -2372,7 +2382,7 @@ int mac_xmit(struct sk_buff *skb, struct net_device *ndev)
 	eth_h = (struct ethhdr *)(skb->data);
 	if(eth_h->h_proto == 0x8e88)
 	{
-		printk("EAPOL transmitted\n");
+		PRINT_D(INIT_DBG,"EAPOL transmitted\n");
 	}
 
 	/*get source and dest ip addresses*/
@@ -2461,7 +2471,7 @@ int mac_close(struct net_device *ndev)
 	}
 	else
 	{
-		printk("ERROR: MAC close called while number of opened interfaces is zero\n");
+		PRINT_ER("ERROR: MAC close called while number of opened interfaces is zero\n");
 		return 0;
 	}
 	
@@ -2708,15 +2718,8 @@ void frmw_to_linux(uint8_t *buff, uint32_t size,uint32_t pkt_offset){
 			#ifndef TCP_ENHANCEMENTS
 		    /*get source and dest ip addresses*/
 			ih = (struct iphdr *)(skb->data+sizeof(struct ethhdr));
-			//saddr = &ih->saddr;
-			//daddr = &ih->daddr;
-			//WILC_PRINTF("[REC]Source IP = %.2x:%.2x:%.2x:%.2x",saddr[0],saddr[1],
-					//saddr[2],saddr[3]);
-			//WILC_PRINTF("[REC]Dest IP = %.2x:%.2x:%.2x:%.2x",daddr[0],daddr[1],
-				//		daddr[2],daddr[3]);
-			//WILC_PRINTF("Protocol = %4x\n",skb->protocol);
+
 			pu8UdpBuffer = (char*)ih + sizeof(struct iphdr);
-			//printk("Port No = %d,%d\n",pu8UdpBuffer[1],pu8UdpBuffer[3]);
 			if(buff_to_send[35] == 67 && buff_to_send[37] == 68)
 			{
 				PRINT_D(RX_DBG,"DHCP Message received\n");
@@ -2729,7 +2732,6 @@ void frmw_to_linux(uint8_t *buff, uint32_t size,uint32_t pkt_offset){
 			nic->netstats.rx_bytes+=frame_len;
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
 			stats = netif_rx(skb);
-			//printk("netif_rx ret value is: %d\n",stats);
 		    PRINT_D(RX_DBG,"netif_rx ret value is: %d\n",stats);
 		}
 		#ifndef TCP_ENHANCEMENTS
@@ -2877,13 +2879,13 @@ static int __init init_wilc_driver(void){
 	
 #if defined (WILC_DEBUGFS)
 	if(wilc_debugfs_init() < 0) {
-		WILC_PRINTF("fail to create debugfs for wilc driver\n");
+		PRINT_D(GENERIC_DBG,"fail to create debugfs for wilc driver\n");
 		return -1;
 	}
 #endif
 
 	printk("IN INIT FUNCTION\n");
-	printk("*** WILC1000 driver VERSION=[%s] REVISON=[%s] FW_VER=[%s] ***\n", __DRIVER_VERSION__, SVNREV, STA_FIRMWARE);
+	printk("*** WILC1000 driver VERSION=[%s] REVISON=[%s] FW_VER=[%s] ***\n", __DRIVER_VERSION__, SVNREV,  __DRIVER_VERSION__);
 
     linux_wlan_device_power(1);
 	msleep(100);
@@ -2895,7 +2897,7 @@ static int __init init_wilc_driver(void){
 
 		ret = sdio_register_driver(&wilc_bus);
 		if (ret < 0) {
-			printk("init_wilc_driver: Failed register sdio driver\n");
+			PRINT_D(INIT_DBG,"init_wilc_driver: Failed register sdio driver\n");
 		}
 	
 	return ret;
@@ -2905,8 +2907,6 @@ static int __init init_wilc_driver(void){
 	if(wilc_netdev_init()){
 		PRINT_ER("Couldn't initialize netdev\n");
 	}
-
-	PRINT_D(INIT_DBG,"Device has been initialized successfully\n");
     return 0;
 #endif
 }
@@ -3000,7 +3000,7 @@ static void __exit exit_wilc_driver(void)
 		WILC_FREE(g_linux_wlan);
 		g_linux_wlan = NULL;
 	}
-	PRINT_D(INIT_DBG,"Module_exit Done.\n");	
+	printk("Module_exit Done.\n");	
 	
 #if defined (WILC_DEBUGFS)
 	wilc_debugfs_remove();

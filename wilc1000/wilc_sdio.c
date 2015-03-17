@@ -177,7 +177,7 @@ static int sdio_clear_int(void)
 	cmd.data = 0;
 	g_sdio.sdio_cmd52(&cmd);
 	int_clrd++;
-	//printk("intSts=%d\n",cmd.data);
+
 	return cmd.data;
 #else
 	uint32_t reg;
@@ -400,8 +400,6 @@ static int sdio_write(uint32_t addr, uint8_t *buf, uint32_t size)
 	    seg_cnt = (nblk*block_size)/MAX_SEG_SIZE;
 	    rest = (nblk*block_size) & (MAX_SEG_SIZE-1);
 
-	    //printk("[Johnny W] seg_cnt = %d, rest = %d\n", seg_cnt, rest);
-
 	    for ( i = 0 ; i < seg_cnt ; i ++ )
 	    {
 	      cmd.block_mode = 1;
@@ -410,8 +408,6 @@ static int sdio_write(uint32_t addr, uint8_t *buf, uint32_t size)
 	      cmd.buffer = buf;
 	      cmd.block_size = block_size;
 
-	      //printk("[Johnny W] cmd.count = %d, cmd.block_size = %d\n", cmd.count, cmd.block_size);
-      
 	      if (addr > 0) {
 	        if (!sdio_set_func0_csa_address(addr))
 	          goto _fail_;
@@ -657,8 +653,6 @@ static int sdio_read(uint32_t addr, uint8_t *buf, uint32_t size)
 	    seg_cnt = (nblk*block_size)/MAX_SEG_SIZE;
 	    rest = (nblk*block_size) & (MAX_SEG_SIZE-1);
 
-	    //printk("[Johnny R] seg_cnt = %d, rest = %d\n", seg_cnt, rest);
-
 	    for ( i = 0 ; i < seg_cnt ; i ++ )
 	    {
 	      cmd.block_mode = 1;
@@ -667,8 +661,7 @@ static int sdio_read(uint32_t addr, uint8_t *buf, uint32_t size)
 	      cmd.buffer = buf;
 	      cmd.block_size = block_size;
 
-	      //printk("[Johnny R] cmd.count = %d, cmd.block_size = %d\n", cmd.count, cmd.block_size);
-      
+     
 	      if (addr > 0) {
 	        if (!sdio_set_func0_csa_address(addr))
 	          goto _fail_;
@@ -994,7 +987,6 @@ static int sdio_read_size(uint32_t * size)
 		cmd.data = 0;
 		g_sdio.sdio_cmd52(&cmd);
 		tmp = cmd.data;
-		//printk("%s @ %d: sdio read %x = %x\n", __FUNCTION__, __LINE__, cmd.address, cmd.data);
 
 		//cmd.read_write = 0;
 		//cmd.function = 0;
@@ -1003,7 +995,6 @@ static int sdio_read_size(uint32_t * size)
 		cmd.data = 0;
 		g_sdio.sdio_cmd52(&cmd);
 		tmp |= (cmd.data << 8);	
-		//printk("%s @ %d: sdio read %x = %x\n", __FUNCTION__, __LINE__, cmd.address, cmd.data);
 	}
 	
 	*size=tmp;	
@@ -1028,7 +1019,7 @@ static int sdio_read_int(uint32_t * int_status)
 	cmd.address = 0x04;
 	cmd.data = 0;
 	g_sdio.sdio_cmd52(&cmd);
-	//printk("%s @ %d: sdio read %x = %x\n", __FUNCTION__, __LINE__, cmd.address, cmd.data);
+
 	if(cmd.data & (1 << 0)) {
 		tmp |= INT_0;
 	} 
@@ -1074,16 +1065,12 @@ static int sdio_read_int(uint32_t * int_status)
 	
 	*int_status = tmp;
 
-	//printk("int_status = %x\n", *int_status);
-
 	return 1;
 }
 
 static int sdio_clear_int_ext(uint32_t val)
 {
 	int ret;
-
-	//printk("sdio_clear_int_ext = %x\n", val);	
 
 	if(g_sdio.has_thrpt_enh3) {
 		uint32_t reg;
@@ -1179,7 +1166,6 @@ static int sdio_clear_int_ext(uint32_t val)
 				cmd.raw = 0;
 				cmd.address = 0xf6;
 				cmd.data = vmm_ctl;
-				//printk("%s @ %d: sdio read %x = %x\n", __FUNCTION__, __LINE__, cmd.address, cmd.data);
 				ret = g_sdio.sdio_cmd52(&cmd);
 				if (!ret) {
 					g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd52, set 0xf6 data (%d) ...\n", __LINE__);

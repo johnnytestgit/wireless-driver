@@ -17,12 +17,17 @@ choice
         config WILC1000_PREALLOCATE_AT_LOADING_DRIVER
                 bool "Preallocate memory at loading driver"
                 ---help---
-                        To do.
+                        This choice supports static allocation of the memory
+                        for the receive buffer. The driver will allocate the RX buffer 
+                        during initial time. The driver will also free the buffer
+                        by calling network device stop.
 
         config WILC1000_DYNAMICALLY_ALLOCATE_MEMROY
                 bool "Dynamically allocate memory in real time"
                 ---help---
-                        To do.
+                        This choice supports dynamic allocation of the memory
+                        for the receive buffer. The driver will allocate the RX buffer
+                        when it is required.
 endchoice
 
 
@@ -51,6 +56,6 @@ config WILC1000_HW_OOB_INTR
     depends on WILC1000 && WILC1000_SDIO
     default n
     ---help---
-		If your platform don't recognize SDIO IRQ, connect chipset external IRQ pin and check this option.
-		Or, Use this to get all interrupts including SDIO interrupts.
+		If your platform don't recognize SDIO IRQ, connect chipset external IRQ pin
+		and check this option. Or, Use this to get all interrupts including SDIO interrupts.
 

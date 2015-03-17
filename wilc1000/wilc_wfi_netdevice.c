@@ -73,7 +73,7 @@ static void (*WILC_WFI_Interrupt)(int, void *, struct pt_regs *);
          for (i = 0; i < pool_size; i++) {
                  pkt = kmalloc (sizeof (struct WILC_WFI_packet), GFP_KERNEL);
                  if (pkt == NULL) {
-                         printk (KERN_NOTICE "Ran out of memory allocating packet pool\n");
+                         PRINT_D(RX_DBG, "Ran out of memory allocating packet pool\n");
                          return;
                  }
                  pkt->dev = dev;
@@ -123,7 +123,7 @@ void WILC_WFI_TearDownPool(struct net_device *dev)
          pkt = priv->ppool;
          priv->ppool = pkt->next;
          if (priv->ppool == NULL) {
-                 printk (KERN_INFO "Pool empty\n");
+                 PRINT_INFO(RX_DBG, "Pool empty\n");
                  netif_stop_queue(dev);
          }
          spin_unlock_irqrestore(&priv->lock, flags);
@@ -274,7 +274,7 @@ int WILC_WFI_Config(struct net_device *dev, struct ifmap *map)
  
 	/* Don't allow changing the I/O address */
 	if (map->base_addr != dev->base_addr) {
-		printk(KERN_WARNING "WILC_WFI: Can't change I/O address\n");
+		PRINT_D(RX_DBG, KERN_WARNING "WILC_WFI: Can't change I/O address\n");
 		return -EOPNOTSUPP;
 	}
  
@@ -313,7 +313,7 @@ void WILC_WFI_Rx(struct net_device *dev, struct WILC_WFI_packet *pkt)
          skb = dev_alloc_skb(pkt->datalen + 2);
          if (!skb) {
                  if (printk_ratelimit())
-                         printk(KERN_NOTICE "WILC_WFI rx: low on mem - packet dropped\n");
+                         PRINT_D(RX_DBG, "WILC_WFI rx: low on mem - packet dropped\n");
                  priv->stats.rx_dropped++;
                  goto out;
          }
@@ -324,9 +324,8 @@ void WILC_WFI_Rx(struct net_device *dev, struct WILC_WFI_packet *pkt)
          {
         	 PRINT_INFO(RX_DBG,"In monitor device name %s\n", dev->name);
         	 priv = wiphy_priv(priv->dev->ieee80211_ptr->wiphy);
-        	 printk("VALUE PASSED IN OF HRWD %p\n", priv->hWILCWFIDrv);
+        	 PRINT_D(RX_DBG, "VALUE PASSED IN OF HRWD %p\n", priv->hWILCWFIDrv);
         	// host_int_get_rssi(priv->hWILCWFIDrv, &(rssi));
-        	// WILC_PRINTF("RSSI value is %d\n", rssi);
         	if(INFO)
         	{
         	 for (i=14 ; i<skb->len; i++)
@@ -336,7 +335,7 @@ void WILC_WFI_Rx(struct net_device *dev, struct WILC_WFI_packet *pkt)
         	 return;
          }
 #if 0
-         WILC_PRINTF("In RX NORMAl Device name %s\n", dev->name);
+         PRINT_D(RX_DBG, "In RX NORMAl Device name %s\n", dev->name);
          /* Write metadata, and then pass to the receive level */
          skb->dev = dev;
          skb->protocol = eth_type_trans(skb, dev);
@@ -371,7 +370,7 @@ static int WILC_WFI_Poll(struct napi_struct *napi, int budget)
                  skb = dev_alloc_skb(pkt->datalen + 2);
                  if (! skb) {
                          if (printk_ratelimit())
-                                 printk(KERN_NOTICE "WILC_WFI: packet dropped\n");
+                                 PRINT_D(RX_DBG, "WILC_WFI: packet dropped\n");
                          priv->stats.rx_dropped++;
                          WILC_WFI_ReleaseBuffer(pkt);
                          continue;
@@ -526,17 +525,17 @@ static void WILC_WFI_NapiInterrupt(int irq, void *dev_id, struct pt_regs *regs)
 
          /* I am paranoid. Ain't I? */
          if (len < sizeof(struct ethhdr) + sizeof(struct iphdr)) {
-                 printk("WILC_WFI: Hmm... packet too short (%i octets)\n",
+                 PRINT_D(RX_DBG, "WILC_WFI: Hmm... packet too short (%i octets)\n",
                                  len);
                  return;
          }
  
          if (0) { /* enable this conditional to look at the data */
                  int i;
-                 printk("len is %i",len);
+                 PRINT_D(RX_DBG, "len is %i",len);
                  for (i=14 ; i<len; i++)
-                         printk("TXdata[%d] %02x\n",i,buf[i]&0xff);
-              //   printk("\n");
+                         PRINT_D(RX_DBG, "TXdata[%d] %02x\n",i,buf[i]&0xff);
+              //   PRINT_D(RX_DBG, "\n");
          }
          /*
           * Ethhdr is 14 bytes, but the kernel arranges for iphdr
@@ -554,11 +553,11 @@ static void WILC_WFI_NapiInterrupt(int irq, void *dev_id, struct pt_regs *regs)
  
 
          if (dev == WILC_WFI_devs[0])
-                 PDEBUGG("%08x:%05i --> %08x:%05i\n",
+                 PRINT_D(RX_DBG, "%08x:%05i --> %08x:%05i\n",
                                  ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source),
                                  ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest));
          else
-                 PDEBUGG("%08x:%05i <-- %08x:%05i\n",
+                 PRINT_D(RX_DBG, "%08x:%05i <-- %08x:%05i\n",
                                  ntohl(ih->daddr),ntohs(((struct tcphdr *)(ih+1))->dest),
                                  ntohl(ih->saddr),ntohs(((struct tcphdr *)(ih+1))->source));
  
@@ -586,7 +585,7 @@ static void WILC_WFI_NapiInterrupt(int irq, void *dev_id, struct pt_regs *regs)
          if (lockup && ((priv->stats.tx_packets + 1) % lockup) == 0) {
                  /* Simulate a dropped transmit interrupt */
                  netif_stop_queue(dev);
-                 PDEBUG("Simulate lockup at %ld, txp %ld\n", jiffies,
+                 PRINT_D(RX_DBG, "Simulate lockup at %ld, txp %ld\n", jiffies,
                                  (unsigned long) priv->stats.tx_packets);
          }
          else
@@ -649,7 +648,7 @@ void WILC_WFI_TxTimeout(struct net_device *dev)
 {
          struct WILC_WFI_priv *priv = netdev_priv(dev);
  
-         PDEBUG("Transmit timeout at %ld, latency %ld\n", jiffies,
+         PRINT_D(RX_DBG, "Transmit timeout at %ld, latency %ld\n", jiffies,
                          jiffies - dev->trans_start);
          /* Simulate a transmission interrupt to get things moving */
          priv->status = WILC_WFI_TX_INTR;
@@ -672,7 +671,7 @@ void WILC_WFI_TxTimeout(struct net_device *dev)
 */ 
 int WILC_WFI_Ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 {
-         PDEBUG("ioctl\n");
+         PRINT_D(RX_DBG, "ioctl\n");
          return 0;
 }
 
@@ -847,7 +846,7 @@ void WILC_WFI_Cleanup(void)
 
  	/*if(hwsim_mon!=NULL)
  	{
- 		printk("Freeing monitor interface\n");
+ 		PRINT_D(RX_DBG, "Freeing monitor interface\n");
  		unregister_netdev(hwsim_mon);
  		free_netdev(hwsim_mon);
  	}*/
@@ -857,11 +856,11 @@ void WILC_WFI_Cleanup(void)
 
 		if (WILC_WFI_devs[i]) 
 		{
-			WILC_PRINTF("Unregistering\n");
+			PRINT_D(RX_DBG, "Unregistering\n");
             unregister_netdev(WILC_WFI_devs[i]);
             WILC_WFI_TearDownPool(WILC_WFI_devs[i]);
             free_netdev(WILC_WFI_devs[i]);
-			WILC_PRINTF("[NETDEV]Stopping interface\n");
+			PRINT_D(RX_DBG, "[NETDEV]Stopping interface\n");
 			WILC_WFI_DeInitHostInt(WILC_WFI_devs[i]);
             WILC_WFI_WiphyFree(WILC_WFI_devs[i]);
           }
@@ -919,7 +918,7 @@ int WILC_WFI_InitModule(void)
 		
 		/*Registering the net device*/
         if ((result = register_netdev(WILC_WFI_devs[i])))
-        	printk("WILC_WFI: error %i registering device \"%s\"\n",
+        	PRINT_D(RX_DBG, "WILC_WFI: error %i registering device \"%s\"\n",
         			result, WILC_WFI_devs[i]->name);
         else
         	ret = 0;
@@ -929,12 +928,10 @@ int WILC_WFI_InitModule(void)
 	/*init atmel driver */
 	priv[0] = netdev_priv(WILC_WFI_devs[0]);
 	priv[1] = netdev_priv(WILC_WFI_devs[1]);
-	//printk("Net dev handler in int %lu\n",&priv[0]->hWILCWFIDrv);
 
 	if(priv[1]->dev->ieee80211_ptr->wiphy->interface_modes && BIT(NL80211_IFTYPE_MONITOR) )
 	{
 		//snprintf(buf, IFNAMSIZ, "mon.%s",  priv[1]->dev->name);
-	//	printk("Initializing mon interface %s\n", buf);
 	//	WILC_WFI_init_mon_interface();
 	//	priv[1]->monitor_flag = 1;
 
@@ -950,7 +947,7 @@ int WILC_WFI_InitModule(void)
 	//priv[1]->hWILCWFIDrv = priv[0]->hWILCWFIDrv;
 	if(ret)
 	{
-		WILC_PRINTF("Error Init Driver\n");
+		PRINT_ER("Error Init Driver\n");
 	}
 
 	

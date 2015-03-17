@@ -731,7 +731,8 @@ static WILC_Sint32 Handle_SetOperationMode(void * drvHandler, tstrHostIfSetOpera
 	strWID.s32ValueSize = sizeof(WILC_Uint32);
 
 	/*Sending Cfg*/
-	printk("(WILC_Uint32)pstrWFIDrv= %x \n",(WILC_Uint32)pstrWFIDrv);
+	PRINT_INFO(HOSTINF_DBG,"(WILC_Uint32)pstrWFIDrv= %x \n",(WILC_Uint32)pstrWFIDrv);
+
 	s32Error = SendConfigPkt(SET_CFG, &strWID, 1, WILC_TRUE,(WILC_Uint32)pstrWFIDrv);
 					
 
@@ -774,7 +775,7 @@ WILC_Sint32 Handle_set_IPAddress(void * drvHandler, WILC_Uint8* pu8IPAddr, WILC_
 	if(pu8IPAddr[0] <192)
 		pu8IPAddr[0]=0;
 	
-	printk("Indx = %d, Handling set  IP = %d.%d.%d.%d \n",idx, pu8IPAddr[0],pu8IPAddr[1],pu8IPAddr[2],pu8IPAddr[3]);
+	PRINT_INFO(HOSTINF_DBG,"Indx = %d, Handling set  IP = %d.%d.%d.%d \n",idx, pu8IPAddr[0],pu8IPAddr[1],pu8IPAddr[2],pu8IPAddr[3]);
 
 	WILC_memcpy(gs8SetIP[idx],pu8IPAddr,IP_ALEN);
 	
@@ -833,7 +834,7 @@ WILC_Sint32 Handle_get_IPAddress(void * drvHandler, WILC_Uint8* pu8IPAddr, WILC_
 
 	s32Error = SendConfigPkt(GET_CFG, &strWID, 1, WILC_TRUE, (WILC_Uint32)pstrWFIDrv);
 		
-	printk("%d.%d.%d.%d\n",(WILC_Uint8)(strWID.ps8WidVal[0]),(WILC_Uint8)(strWID.ps8WidVal[1]),(WILC_Uint8)(strWID.ps8WidVal[2]),(WILC_Uint8)(strWID.ps8WidVal[3]));
+	PRINT_INFO(HOSTINF_DBG,"%d.%d.%d.%d\n",(WILC_Uint8)(strWID.ps8WidVal[0]),(WILC_Uint8)(strWID.ps8WidVal[1]),(WILC_Uint8)(strWID.ps8WidVal[2]),(WILC_Uint8)(strWID.ps8WidVal[3]));
 	
 	WILC_memcpy(gs8GetIP[idx],strWID.ps8WidVal,IP_ALEN);
 	
@@ -850,9 +851,8 @@ WILC_Sint32 Handle_get_IPAddress(void * drvHandler, WILC_Uint8* pu8IPAddr, WILC_
 	}
 	else
 	{
-		printk("IP address retrieved:: u8IfIdx = %d \n",idx);
-		printk("%d.%d.%d.%d\n",gs8GetIP[idx][0],gs8GetIP[idx][1],gs8GetIP[idx][2],gs8GetIP[idx][3]);
-
+		PRINT_INFO(HOSTINF_DBG,"IP address retrieved:: u8IfIdx = %d \n",idx);
+		PRINT_INFO(HOSTINF_DBG,"%d.%d.%d.%d\n",gs8GetIP[idx][0],gs8GetIP[idx][1],gs8GetIP[idx][2],gs8GetIP[idx][3]);
 		PRINT_INFO(HOSTINF_DBG,"\n");
 	}
 
@@ -2657,7 +2657,7 @@ static WILC_Sint32 Handle_RcvdGnrlAsyncInfo(void * drvHandler,tstrRcvdGnrlAsyncI
 		u8MacStatus  = pstrRcvdGnrlAsyncInfo->pu8Buffer[7];
 		u8MacStatusReasonCode = pstrRcvdGnrlAsyncInfo->pu8Buffer[8];
 		u8MacStatusAdditionalInfo = pstrRcvdGnrlAsyncInfo->pu8Buffer[9];
-		printk("Recieved MAC status = %d with Reason = %d , Info = %d\n",u8MacStatus, u8MacStatusReasonCode, u8MacStatusAdditionalInfo);
+		PRINT_INFO(HOSTINF_DBG,"Recieved MAC status = %d with Reason = %d , Info = %d\n",u8MacStatus, u8MacStatusReasonCode, u8MacStatusAdditionalInfo);
 		if(pstrWFIDrv->enuHostIFstate == HOST_IF_WAITING_CONN_RESP)
 		{
 			/* our station had sent Association Request frame, so here it will get the Association Response frame then parse it */
@@ -2724,13 +2724,13 @@ static WILC_Sint32 Handle_RcvdGnrlAsyncInfo(void * drvHandler,tstrRcvdGnrlAsyncI
 			if((u8MacStatus == MAC_CONNECTED) && 
 			    (strConnectInfo.u16ConnectStatus != SUCCESSFUL_STATUSCODE))
 			{
-				WILC_ERROR("Received MAC status is MAC_CONNECTED while the received status code in Asoc Resp is not SUCCESSFUL_STATUSCODE \n");
+				PRINT_ER("Received MAC status is MAC_CONNECTED while the received status code in Asoc Resp is not SUCCESSFUL_STATUSCODE \n");
 				WILC_memset(u8ConnectedSSID,0,ETH_ALEN);
 				
 			}
 			else if(u8MacStatus == MAC_DISCONNECTED)
 			{
-				WILC_ERROR("Received MAC status is MAC_DISCONNECTED\n");
+				PRINT_ER("Received MAC status is MAC_DISCONNECTED\n");
 				WILC_memset(u8ConnectedSSID,0,ETH_ALEN);
 			}
 			
@@ -2851,7 +2851,7 @@ static WILC_Sint32 Handle_RcvdGnrlAsyncInfo(void * drvHandler,tstrRcvdGnrlAsyncI
 
 			if(pstrWFIDrv->strWILC_UsrScanReq.pfUserScanResult)
 		       {                
-			       	printk("\n\n<< Abort the running OBSS Scan >> \n\n");
+					PRINT_D(HOSTINF_DBG,"\n\n<< Abort the running OBSS Scan >> \n\n");
 					WILC_TimerStop(&(pstrWFIDrv->hScanTimer), WILC_NULL);
 					Handle_ScanDone((void*)pstrWFIDrv,SCAN_EVENT_ABORTED);              
 		       }			
@@ -2936,7 +2936,7 @@ static WILC_Sint32 Handle_RcvdGnrlAsyncInfo(void * drvHandler,tstrRcvdGnrlAsyncI
 		}else if((u8MacStatus == MAC_DISCONNECTED) &&
 			    (pstrWFIDrv->strWILC_UsrScanReq.pfUserScanResult != NULL)){
 					PRINT_D(HOSTINF_DBG,"Received MAC_DISCONNECTED from the FW while scanning\n");
-			       	printk("\n\n<< Abort the running Scan >> \n\n");
+					PRINT_D(HOSTINF_DBG,"\n\n<< Abort the running Scan >> \n\n");
 					/*Abort the running scan*/
 					WILC_TimerStop(&(pstrWFIDrv->hScanTimer), WILC_NULL);
 					if(pstrWFIDrv->strWILC_UsrScanReq.pfUserScanResult)
@@ -3415,7 +3415,7 @@ static void Handle_Disconnect(void* drvHandler)
 			/*Stop connect timer, if connection in progress*/
 			if(pstrWFIDrv->enuHostIFstate == HOST_IF_WAITING_CONN_RESP)
 			{
-				printk("Upper layer requested termination of connection\n");
+				PRINT_D(HOSTINF_DBG,"Upper layer requested termination of connection\n");
 				WILC_TimerStop(&(pstrWFIDrv->hConnectTimer), WILC_NULL);
 			}
 
@@ -3424,7 +3424,7 @@ static void Handle_Disconnect(void* drvHandler)
 		}
 		else
 		{
-			WILC_ERROR("strWILC_UsrConnReq.pfUserConnectResult = NULL \n");
+			PRINT_ER("strWILC_UsrConnReq.pfUserConnectResult = NULL \n");
 		}
 
 		gbScanWhileConnected = WILC_FALSE;
@@ -3490,7 +3490,7 @@ void resolve_disconnect_aberration(void* drvHandler)
 		return;
 	if((pstrWFIDrv->enuHostIFstate == HOST_IF_WAITING_CONN_RESP)||(pstrWFIDrv->enuHostIFstate == HOST_IF_CONNECTING))
 		{
-			printk("\n\n<< correcting Supplicant state machine >>\n\n");
+			PRINT_D(HOSTINF_DBG,"\n\n<< correcting Supplicant state machine >>\n\n");
 			host_int_disconnect((WILC_WFIDrvHandle)pstrWFIDrv, 1);
 		}
 }
@@ -4889,7 +4889,7 @@ static void hostIFthread(void* pvArg)
 			#endif /*WILC_AP_EXTERNAL_MLME*/
 			case HOST_IF_MSG_SCAN_TIMER_FIRED:
 			{
-				WILC_PRINTF("Scan Timeout\n");
+				PRINT_D(HOSTINF_DBG, "Scan Timeout\n");
 
 				Handle_ScanDone(strHostIFmsg.drvHandler,SCAN_EVENT_ABORTED);
 
@@ -4899,7 +4899,7 @@ static void hostIFthread(void* pvArg)
 			}
 			case HOST_IF_MSG_CONNECT_TIMER_FIRED:
 			{
-				WILC_PRINTF("Connect Timeout \n");
+				PRINT_D(HOSTINF_DBG, "Connect Timeout \n");
 				Handle_ConnectTimeout(strHostIFmsg.drvHandler);
 				break;
 			}
@@ -4998,7 +4998,7 @@ static void hostIFthread(void* pvArg)
 
 			default:
 			{
-				WILC_ERROR("[Host Interface] undefined Received Msg ID  \n");
+				PRINT_ER("[Host Interface] undefined Received Msg ID  \n");
 				break;
 			}
 		}
@@ -5529,7 +5529,7 @@ WILC_Sint32 host_int_add_rx_gtk(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8* pu8RxGtk,
 	/* send the message */
 	s32Error = WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
 	if(s32Error)
-		WILC_ERROR("Error in sending message queue:  RX GTK\n");
+		PRINT_ER("Error in sending message queue:  RX GTK\n");
 	////////////////
 	WILC_SemaphoreAcquire(&(pstrWFIDrv->hSemTestKeyBlock),NULL);
 	//WILC_Sleep(100);
@@ -5587,7 +5587,7 @@ WILC_Sint32 host_int_add_tx_gtk(WILC_WFIDrvHandle hWFIDrv,WILC_Uint8 u8KeyLen,WI
 	/* send the message */
 	s32Error = WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
 	if(s32Error)
-		WILC_ERROR("Error in sending message queue: TX GTK\n");
+		PRINT_ER("Error in sending message queue: TX GTK\n");
 	
 	////////////////
 	WILC_SemaphoreAcquire(&hSemTestKeyBlock,NULL);
@@ -6808,7 +6808,7 @@ WILC_Sint32 host_int_scan(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8 u8ScanSource,
 	
 		}
 		else
-			WILC_PRINTF("pstrHiddenNetwork IS EQUAL TO NULL\n");
+			PRINT_D(HOSTINF_DBG, "pstrHiddenNetwork IS EQUAL TO NULL\n");
 
 		strHostIFmsg.drvHandler=hWFIDrv;
 		strHostIFmsg.uniHostIFmsgBody.strHostIFscanAttr.u8ScanSource = u8ScanSource;
@@ -6839,7 +6839,7 @@ WILC_Sint32 host_int_scan(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8 u8ScanSource,
 		}
 
 		enuScanConnTimer = SCAN_TIMER;	
-		printk(">> Starting the SCAN timer\n");
+		PRINT_D(HOSTINF_DBG,">> Starting the SCAN timer\n");
 		WILC_TimerStart(&(pstrWFIDrv->hScanTimer), HOST_IF_SCAN_TIMEOUT,(void*) hWFIDrv, WILC_NULL);
 		
 	
@@ -7082,11 +7082,8 @@ void GetPeriodicRSSI(void * pvArg)
 
 	if(pstrWFIDrv->enuHostIFstate == HOST_IF_CONNECTED)
 	{	
-	
-		//printk("get peridoc rssi\n");
 		WILC_Sint32 s32Error = WILC_SUCCESS;	
 		tstrHostIFmsg strHostIFmsg;
-
 		
 		/* prepare the Get RSSI Message */
 		WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
@@ -7369,18 +7366,18 @@ WILC_Sint32 host_int_deinit(WILC_WFIDrvHandle hWFIDrv)
 	/*Destroy all timers before acquiring hSemDeinitDrvHandle*/
 	/*to guarantee handling all messages befor proceeding*/
 	if(WILC_TimerDestroy(&(pstrWFIDrv->hScanTimer), WILC_NULL)){
-		printk(">> Scan timer is active \n");
+		PRINT_D(HOSTINF_DBG,">> Scan timer is active \n");
 		//msleep(HOST_IF_SCAN_TIMEOUT+1000);
 	}
 	
 	if(WILC_TimerDestroy(&(pstrWFIDrv->hConnectTimer), WILC_NULL)){
-		printk(">> Connect timer is active \n");
+		PRINT_D(HOSTINF_DBG,">> Connect timer is active \n");
 		//msleep(HOST_IF_CONNECT_TIMEOUT+1000);
 	}
 
 	
 	if(WILC_TimerDestroy(&(g_hPeriodicRSSI), WILC_NULL)){
-			printk(">> Connect timer is active \n");
+			PRINT_D(HOSTINF_DBG,">> Connect timer is active \n");
 			//msleep(HOST_IF_CONNECT_TIMEOUT+1000);
 		}
 	
@@ -7420,7 +7417,7 @@ WILC_Sint32 host_int_deinit(WILC_WFIDrvHandle hWFIDrv)
 	{
 		if(WILC_TimerDestroy(&g_hPeriodicRSSI, WILC_NULL))
 		{
-			printk(">> Connect timer is active \n");
+			PRINT_D(HOSTINF_DBG,">> Connect timer is active \n");
 			//msleep(HOST_IF_CONNECT_TIMEOUT+1000);
 		}
 		strHostIFmsg.u16MsgId = HOST_IF_MSG_EXIT;
@@ -7556,7 +7553,7 @@ void GnrlAsyncInfoReceived(WILC_Uint8* pu8Buffer, WILC_Uint32 u32Length)
 
 	if(pstrWFIDrv== NULL||pstrWFIDrv==terminated_handle)
 	{
-		PRINT_ER("Wifi driver handler is equal to NULL\n");
+		PRINT_D(HOSTINF_DBG, "Wifi driver handler is equal to NULL\n");
 		/*BugID_5348*/
 		WILC_SemaphoreRelease(&hSemHostIntDeinit, NULL);
 		return;
@@ -8160,8 +8157,7 @@ WILC_Sint32 host_int_set_power_mgmt(WILC_WFIDrvHandle hWFIDrv, WILC_Bool bIsEnab
 	tstrHostIFmsg strHostIFmsg;
 	tstrHostIfPowerMgmtParam* pstrPowerMgmtParam = &strHostIFmsg.uniHostIFmsgBody.strPowerMgmtparam;
 
-	printk("\n\n>> Setting PS to %d << \n\n",bIsEnabled);
-
+	PRINT_INFO(HOSTINF_DBG,"\n\n>> Setting PS to %d << \n\n",bIsEnabled);
 
 	if(pstrWFIDrv == WILC_NULL)
 	{
@@ -8314,7 +8310,6 @@ static void* host_int_ParseJoinBssParam(tstrNetworkInfo* ptstrNetworkInfo)
 					pNewJoinBssParam->supp_rates[suppRatesNo+i+1] = pu8IEs[index+i];
 					//PRINT_D(HOSTINF_DBG,"%0x ",pNewJoinBssParam->supp_rates[suppRatesNo+i+1]);
 				}
-				//printk("\n");
 				index+=extSuppRatesNo;
 				continue;
 			}
@@ -8440,20 +8435,17 @@ static void* host_int_ParseJoinBssParam(tstrNetworkInfo* ptstrNetworkInfo)
 				authCount = (pu8IEs[rsnIndex] > 3) ? 3 :pu8IEs[rsnIndex];
 				rsnIndex+=2; //jump 2 bytes of pcipher count	
 
-				//PRINT_D(HOSTINF_DBG,"\nauth policy: ");
 				for(i=authTotalCount,j=0; i<authTotalCount+authCount; i++,j++)
 				{
 					//each count corresponds to 4 bytes, only last byte is saved
 					pNewJoinBssParam->rsn_auth_policy[i] = pu8IEs[rsnIndex+((j+1)*4)-1];
 				}
 				authTotalCount += authCount;
-				//printk("\n");
 				rsnIndex+=jumpOffset;
 				/*pasring rsn cap. only if rsn IE*/
 				if(pu8IEs[index]==RSN_IE)
 				{	pNewJoinBssParam->rsn_cap[0]=pu8IEs[rsnIndex];
 					pNewJoinBssParam->rsn_cap[1]=pu8IEs[rsnIndex+1];
-					//PRINT_D(HOSTINF_DBG,"%0x %0x\n",pNewJoinBssParam->rsn_cap[0], pNewJoinBssParam->rsn_cap[1]);
 					rsnIndex+=2	;
 				}
 				pNewJoinBssParam->rsn_found=1;

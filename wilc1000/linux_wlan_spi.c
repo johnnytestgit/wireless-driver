@@ -49,6 +49,7 @@ static int __init wilc_bus_probe(struct spi_device* spi){
 	PRINT_D(BUS_DBG,"spiMax-Speed: %d\n",spi->max_speed_hz);
 	wilc_spi_dev = spi;
 	
+	printk("Driver Initializing success\n");
 	return 0;
 }
 
@@ -344,7 +345,6 @@ int linux_spi_read(unsigned char*rb, unsigned long rlen){
 
 		if(blk)
 		{
-			//printk("  read blk %d cnt\n", blk);
 			while(i<blk)
 			{
 				struct spi_message msg;
@@ -390,7 +390,6 @@ int linux_spi_read(unsigned char*rb, unsigned long rlen){
 			*/
 			tr.tx_buf = t_buffer;
 
-			//printk("  read remain, %d bytes\n", remainder);
 			memset(&msg, 0, sizeof(msg));
 			spi_message_init(&msg);
 			msg.spi = wilc_spi_dev;
@@ -502,6 +501,6 @@ int linux_spi_set_max_speed(void)
 {
 	SPEED = MAX_SPEED;
 	
-	PRINT_ER("@@@@@@@@@@@@ change SPI speed to %d @@@@@@@@@\n", SPEED);
+	PRINT_INFO(BUS_DBG,"@@@@@@@@@@@@ change SPI speed to %d @@@@@@@@@\n", SPEED);
 	return 1;
 }

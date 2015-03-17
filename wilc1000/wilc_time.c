@@ -34,7 +34,7 @@ WILC_Uint32 WILC_TimeMsec(void)
 */
 WILC_Uint32 WILC_Clock()
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -52,7 +52,7 @@ WILC_Uint32 WILC_Clock()
 */
 WILC_Double WILC_DiffTime(WILC_Time time1, WILC_Time time0)
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -71,7 +71,7 @@ WILC_Double WILC_DiffTime(WILC_Time time1, WILC_Time time0)
 */
 WILC_tm* WILC_GmTime(const WILC_Time* timer)
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -91,7 +91,7 @@ WILC_tm* WILC_GmTime(const WILC_Time* timer)
 */
 WILC_tm* WILC_LocalTime(const WILC_Time* timer)
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -113,7 +113,7 @@ WILC_tm* WILC_LocalTime(const WILC_Time* timer)
 */
 WILC_Time WILC_MkTime(WILC_tm* timer)
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -136,7 +136,7 @@ WILC_Uint32 WILC_StringFormatTime(WILC_Char* s,
 								const WILC_Char* format,
 								const WILC_tm* timptr)
 {
-	/*printk("Not implemented")*/
+
 }
 
 
@@ -153,7 +153,7 @@ WILC_Uint32 WILC_StringFormatTime(WILC_Char* s,
 */
 WILC_Time WILC_GetTime(WILC_Time* tloc)
 {
-	/*printk("Not implemented")*/
+
 }
 
 

@@ -1,88 +1,42 @@
-MODULE_NAME = wilc1000
-
-WILC1000_STA_FW_VERSION = STA_FIRMWARE=\"wilc1000_fw.bin\"
-WILC1000_AP_FW_VERSION = AP_FIRMWARE=\"wilc1000_ap_fw.bin\"
-WILC1000_P2P_FIRMWARE = P2P_CONCURRENCY_FIRMWARE=\"wilc1000_p2p_fw.bin\"
-
-EXTRA_CFLAGS += -D$(WILC1000_STA_FW_VERSION)
-EXTRA_CFLAGS += -D$(WILC1000_AP_FW_VERSION)
-EXTRA_CFLAGS += -D$(WILC1000_P2P_FIRMWARE)
-
-obj-$(CONFIG_WILC1000) += $(MODULE_NAME).o
+obj-$(CONFIG_WILC1000) += wilc1000.o
 obj-$(CONFIG_WILC1000_PREALLOCATE_DURING_SYSTEM_BOOT) += wilc_exported_buf.o
 
-EXTRA_CFLAGS += -DEXPORT_SYMTAB
-EXTRA_CFLAGS += -D__CHECK_ENDIAN__
 
-ifeq ($(strip $(CONFIG_WILC1000_SDIO)), y)
-	EXTRA_CFLAGS += -DWILC_SDIO
-	EXTRA_CFLAGS += -DWILC_OPTIMIZE_SLEEP_INT
-	EXTRA_CFLAGS += -DCOMPLEMENT_BOOT
-	$(MODULE_NAME)-objs += linux_wlan_sdio.o
+ccflags-$(CONFIG_WILC1000_SDIO) += -DWILC_SDIO -DWILC_OPTIMIZE_SLEEP_INT \
+		-DCOMPLEMENT_BOOT
+ccflags-$(CONFIG_WILC1000_HW_OOB_INTR) += -DWILC_SDIO_IRQ_GPIO
+ccflags-$(CONFIG_WILC1000_SPI) += -DWILC_SPI
 
-	ifeq ($(strip $(CONFIG_WILC1000_HW_OOB_INTR)),y)
-		EXTRA_CFLAGS += -DWILC_SDIO_IRQ_GPIO
-	endif
-else
-	EXTRA_CFLAGS += -DWILC_SPI
-	$(MODULE_NAME)-objs += linux_wlan_spi.o
-endif
+ccflags-y += -DSTA_FIRMWARE=\"atmel/wilc1000_fw.bin\" \
+		-DAP_FIRMWARE=\"atmel/wilc1000_ap_fw.bin\" \
+		-DP2P_CONCURRENCY_FIRMWARE=\"atmel/wilc1000_p2p_fw.bin\"
 
-EXTRA_CFLAGS += -DWILC_ASIC_A0
-EXTRA_CFLAGS += -DPLL_WORKAROUND
-EXTRA_CFLAGS += -DCONNECT_DIRECT
-EXTRA_CFLAGS += -DWILC_PARSE_SCAN_IN_HOST
+ccflags-y += -I$(src)/ -DEXPORT_SYMTAB  -D__CHECK_ENDIAN__ -DWILC_ASIC_A0 \
+		-DPLL_WORKAROUND -DCONNECT_DIRECT  -DAGING_ALG \
+		-DWILC_PARSE_SCAN_IN_HOST -DDISABLE_PWRSAVE_AND_SCAN_DURING_IP \
+		-DWILC_PLATFORM=WILC_LINUXKERNEL -Wno-unused-function -DUSE_WIRELESS \
+		-DSTATIC_MACADDRESS -DWILC_DEBUGFS
+#ccflags-y += -DTCP_ACK_FILTER
 
-#EXTRA_CFLAGS += -DTCP_ACK_FILTER
-EXTRA_CFLAGS += -DAGING_ALG
-EXTRA_CFLAGS += -DDISABLE_PWRSAVE_AND_SCAN_DURING_IP
+ccflags-$(CONFIG_WILC1000_PREALLOCATE_DURING_SYSTEM_BOOT) += -DMEMORY_STATIC \
+								-DWILC_PREALLOC_AT_BOOT
 
-EXTRA_CFLAGS += -DWILC_PLATFORM=WILC_LINUXKERNEL  
-EXTRA_CFLAGS += -Wno-unused-function
-EXTRA_CFLAGS += -DUSE_WIRELESS
+ccflags-$(CONFIG_WILC1000_PREALLOCATE_AT_LOADING_DRIVER) += -DMEMORY_STATIC \
+								-DWILC_PREALLOC_AT_INSMOD
 
-EXTRA_CFLAGS += -DSTATIC_MACADDRESS
-
-ifeq ($(strip $(CONFIG_WILC1000_PREALLOCATE_DURING_SYSTEM_BOOT)),y)
-	EXTRA_CFLAGS += -DWILC_PREALLOC_AT_BOOT
-	EXTRA_CFLAGS += -DMEMORY_STATIC
-else
-	ifeq ($(strip $(CONFIG_WILC1000_PREALLOCATE_AT_LOADING_DRIVER)),y)
-		EXTRA_CFLAGS += -DMEMORY_STATIC
-		EXTRA_CFLAGS += -DWILC_PREALLOC_AT_INSMOD
-	else
-		ifeq ($(strip $(CONFIG_WILC1000_DYNAMICALLY_ALLOCATE_MEMROY)),y)
-			EXTRA_CFLAGS += -DWILC_NORMAL_ALLOC
-		endif
-	endif
-endif
+ccflags-$(CONFIG_WILC1000_DYNAMICALLY_ALLOCATE_MEMROY) += -DWILC_NORMAL_ALLOC
 
 
-EXTRA_CFLAGS += -I$(src)/
+wilc1000-objs := wilc_wfi_netdevice.o wilc_wfi_cfgoperations.o linux_wlan.o linux_mon.o \
+			wilc_memory.o wilc_msgqueue.o wilc_semaphore.o wilc_sleep.o wilc_strutils.o \
+			wilc_thread.o wilc_time.o wilc_timer.o coreconfigurator.o host_interface.o \
+			fifo_buffer.o wilc_sdio.o wilc_spi.o wilc_wlan_cfg.o wilc_debugfs.o
 
-$(MODULE_NAME)-objs += wilc_wfi_netdevice.o
-$(MODULE_NAME)-objs += wilc_wfi_cfgoperations.o
-$(MODULE_NAME)-objs += linux_wlan.o
-$(MODULE_NAME)-objs += linux_mon.o
-
-$(MODULE_NAME)-objs += wilc_memory.o
-$(MODULE_NAME)-objs += wilc_msgqueue.o
-$(MODULE_NAME)-objs += wilc_semaphore.o
-$(MODULE_NAME)-objs += wilc_sleep.o
-$(MODULE_NAME)-objs += wilc_strutils.o
-$(MODULE_NAME)-objs += wilc_thread.o
-$(MODULE_NAME)-objs += wilc_time.o
-$(MODULE_NAME)-objs += wilc_timer.o
-
-$(MODULE_NAME)-objs += coreconfigurator.o
-$(MODULE_NAME)-objs += host_interface.o
-$(MODULE_NAME)-objs += fifo_buffer.o
-$(MODULE_NAME)-objs += wilc_sdio.o
-$(MODULE_NAME)-objs += wilc_spi.o
-$(MODULE_NAME)-objs += wilc_wlan_cfg.o
+wilc1000-$(CONFIG_WILC1000_SDIO) += linux_wlan_sdio.o
+wilc1000-$(CONFIG_WILC1000_SPI) += linux_wlan_spi.o
 
 WILC1000_SRC_VERSION = 10.0
 PATCHLEVEL = 0
 WILC1000_FW_VERSION = 0
 
-EXTRA_CFLAGS += -D__DRIVER_VERSION__=\"$(WILC1000_SRC_VERSION).$(PATCHLEVEL)\"
+ccflags-y += -D__DRIVER_VERSION__=\"$(WILC1000_SRC_VERSION).$(PATCHLEVEL)\"

@@ -589,7 +589,6 @@ static int wilc_wlan_cfg_indicate_rx(uint8_t *frame, int size, wilc_cfg_rsp_t *r
 #endif
 #if 1
 	case 'N':
-		//WILC_PRINTF("[cfg]Network Message Received\n");
 		NetworkInfoReceived(frame-4, size+4);
 		rsp->type = 0;
 		break;
@@ -608,7 +607,6 @@ static int wilc_wlan_cfg_indicate_rx(uint8_t *frame, int size, wilc_cfg_rsp_t *r
 	case'A':
 		PRINT_INFO(RX_DBG,"HOSTAPD ACK Notification Received \n");
 		WILC_mgm_HOSTAPD_ACK(ptru32Frame,bStatus);
-		//printk("ptru32Frame = %0x\n",ptru32Frame);
 		break;
 #endif
 		

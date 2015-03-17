@@ -7,26 +7,6 @@
 */
 #ifndef WILC_WFI_NETDEVICE
 #define WILC_WFI_NETDEVICE
-/*
-* Macros to help debugging
-*/
-   
-#undef PDEBUG             /* undef it, just in case */
-#ifdef SNULL_DEBUG
-#  ifdef __KERNEL__
-/* This one if debugging is on, and kernel space */
-#    define PDEBUG(fmt, args...) printk( KERN_DEBUG "snull: " fmt, ## args)
-#  else
-/* This one for user space */
-#    define PDEBUG(fmt, args...) fprintf(stderr, fmt, ## args)
-#  endif
-#else
-#  define PDEBUG(fmt, args...) /* not debugging: nothing */
-#endif
-  
-#undef PDEBUGG
-#define PDEBUGG(fmt, args...) /* nothing: it's a placeholder */
-  
   
 /* These are the flags in the statusword */
 #define WILC_WFI_RX_INTR 0x0001
@@ -43,7 +23,7 @@
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
-#include <linux/kernel.h> /* printk() */
+#include <linux/kernel.h>
 #include <linux/slab.h> /* kmalloc() */
 #include <linux/errno.h>  /* error codes */
 #include <linux/types.h>  /* size_t */

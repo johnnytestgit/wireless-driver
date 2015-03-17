@@ -152,7 +152,7 @@ void clear_shadow_scan(void* pUserVoid){
 	if(op_ifcs == 0)
 	{
 		WILC_TimerDestroy(&hAgingTimer,WILC_NULL);
-		printk("destroy aging timer\n");
+		PRINT_INFO(CORECONFIG_DBG, "destroy aging timer\n");
 
 		for(i = 0; i < u32LastScannedNtwrksCountShadow; i++){
 			if(astrLastScannedNtwrksShadow[u32LastScannedNtwrksCountShadow].pu8IEs != NULL)
@@ -443,7 +443,7 @@ static void CfgScanResult(tenuScanEvent enuScanEvent, tstrNetworkInfo* pstrNetwo
 
 
 							if(pJoinParams == NULL){
-								printk(">> Something really bad happened\n");
+								PRINT_INFO(CORECONFIG_DBG, ">> Something really bad happened\n");
 							}
 							add_network_to_shadow(pstrNetworkInfo,priv,pJoinParams);
 
@@ -833,7 +833,7 @@ static int WILC_WFI_CfgScan(struct wiphy *wiphy,struct net_device *dev, struct c
 	priv = wiphy_priv(wiphy);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0)
-	printk("Scan on netdev [%p] host if [%x]\n",dev, (WILC_Uint32)priv->hWILCWFIDrv);
+	PRINT_D(CORECONFIG_DBG, "Scan on netdev [%p] host if [%x]\n",dev, (WILC_Uint32)priv->hWILCWFIDrv);
 #endif
 
 	/*if(connecting)
@@ -1050,7 +1050,7 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 	if(INFO)
 	{
 		for(i=0 ; i < sme->crypto.n_ciphers_pairwise ; i++)
-			WILC_PRINTF("sme->crypto.ciphers_pairwise[%d]=%x\n", i, sme->crypto.ciphers_pairwise[i]);
+			PRINT_D(CORECONFIG_DBG, "sme->crypto.ciphers_pairwise[%d]=%x\n", i, sme->crypto.ciphers_pairwise[i]);
 	}
 
 	if(sme->crypto.cipher_group != NO_ENCRYPT)
@@ -1058,11 +1058,10 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 		/* To determine the u8security value, first we check the group cipher suite then {in case of WPA or WPA2}
 		    we will add to it the pairwise cipher suite(s) */
 			pcwpa_version = "Default";
-			printk(">> sme->crypto.wpa_versions: %x\n",sme->crypto.wpa_versions);
+			PRINT_D(CORECONFIG_DBG, ">> sme->crypto.wpa_versions: %x\n",sme->crypto.wpa_versions);
 			//case NL80211_WPA_VERSION_1:
 			if (sme->crypto.cipher_group == WLAN_CIPHER_SUITE_WEP40)
 			{
-				//printk("> WEP\n");
 				//tenuSecurity_t = WEP_40;
 				u8security = ENCRYPT_ENABLED | WEP;
 				pcgroup_encrypt_val = "WEP40";
@@ -1072,7 +1071,7 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 				if(INFO)
 				{
 					for(i=0;i<sme->key_len;i++)
-						WILC_PRINTF("WEP Key Value[%d] = %d\n", i, sme->key[i]);
+						PRINT_D(CORECONFIG_DBG, "WEP Key Value[%d] = %d\n", i, sme->key[i]);
 				}
 				priv->WILC_WFI_wep_default = sme->key_idx;
 				priv->WILC_WFI_wep_key_len[sme->key_idx] = sme->key_len;
@@ -1090,7 +1089,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 			}
 			else if (sme->crypto.cipher_group == WLAN_CIPHER_SUITE_WEP104)
 			{
-				//printk("> WEP-WEP_EXTENDED\n");
 				//tenuSecurity_t = WEP_104;
 				u8security = ENCRYPT_ENABLED | WEP | WEP_EXTENDED;
 				pcgroup_encrypt_val = "WEP104";
@@ -1112,11 +1110,9 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 			}
 			else if( sme->crypto.wpa_versions & NL80211_WPA_VERSION_2)
 			{
-				//printk("> wpa_version: NL80211_WPA_VERSION_2\n");
 				//case NL80211_WPA_VERSION_2:
 				if (sme->crypto.cipher_group == WLAN_CIPHER_SUITE_TKIP)
 				{
-					//printk("> WPA2-TKIP\n");
 					//tenuSecurity_t = WPA2_TKIP;
 					u8security = ENCRYPT_ENABLED | WPA2 | TKIP;
 					pcgroup_encrypt_val = "WPA2_TKIP";
@@ -1124,7 +1120,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 				}
 				else //TODO: mostafa: here we assume that any other encryption type is AES
 				{
-					//printk("> WPA2-AES\n");
 					//tenuSecurity_t = WPA2_AES;
 					u8security = ENCRYPT_ENABLED | WPA2 | AES;
 					pcgroup_encrypt_val = "WPA2_AES";
@@ -1134,10 +1129,8 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 			}
 			else if( sme->crypto.wpa_versions & NL80211_WPA_VERSION_1)
 			{
-				//printk("> wpa_version: NL80211_WPA_VERSION_1\n");
 				if (sme->crypto.cipher_group == WLAN_CIPHER_SUITE_TKIP)
 				{
-					//printk("> WPA-TKIP\n");
 					//tenuSecurity_t = WPA_TKIP;
 					u8security = ENCRYPT_ENABLED | WPA | TKIP;
 					pcgroup_encrypt_val = "WPA_TKIP";
@@ -1145,7 +1138,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 				}
 				else //TODO: mostafa: here we assume that any other encryption type is AES
 				{
-					//printk("> WPA-AES\n");
 					//tenuSecurity_t = WPA_AES;
 					u8security = ENCRYPT_ENABLED | WPA | AES;
 					pcgroup_encrypt_val = "WPA_AES";
@@ -1160,7 +1152,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 			{
 				s32Error = -ENOTSUPP;
 				PRINT_ER("Not supported cipher: Error(%d)\n",s32Error);
-				//PRINT_ER("Cipher-Group: %x\n",sme->crypto.cipher_group);
 
 				goto done;
 			}
@@ -1212,7 +1203,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 				tenuAuth_type = IEEE8021;
 				break;
 			default:
-				//PRINT_D(CFG80211_DBG, "security unhandled [%x] \n",sme->crypto.akm_suites[0]);
 				break;
 		}
 	}
@@ -1978,10 +1968,10 @@ static int WILC_WFI_get_station(struct wiphy *wiphy, struct net_device *dev,
 #endif
 
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,0,0)
-		printk("*** stats[%d][%d][%d][%d][%d]\n",sinfo->signal,sinfo->rx_packets,sinfo->tx_packets,
+		PRINT_D(CORECONFIG_DBG, "*** stats[%d][%d][%d][%d][%d]\n",sinfo->signal,sinfo->rx_packets,sinfo->tx_packets,
 			sinfo->tx_failed,sinfo->txrate.legacy);
     #else
-        printk("*** stats[%d][%d][%d][%d]\n",sinfo->signal,sinfo->rx_packets,sinfo->tx_packets,
+        PRINT_D(CORECONFIG_DBG, "*** stats[%d][%d][%d][%d]\n",sinfo->signal,sinfo->rx_packets,sinfo->tx_packets,
             sinfo->txrate.legacy);
     #endif
 	}
@@ -3341,7 +3331,7 @@ int WILC_WFI_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
 	 priv = wiphy_priv(wiphy);
 	 if(priv->hWILCWFIDrv == WILC_NULL)
  	{
- 		WILC_ERROR("Driver is NULL\n");
+ 		PRINT_ER("Driver is NULL\n");
 		 return -EIO;
  	}
 
@@ -3617,7 +3607,7 @@ static int WILC_WFI_change_virt_intf(struct wiphy *wiphy,struct net_device *dev,
 		dev->ieee80211_ptr->iftype = type;
 		priv->wdev->iftype = type;
 		nic->iftype = AP_MODE;
-		printk("(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
+		PRINT_D(CORECONFIG_DBG, "(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
 
 		#ifndef SIMULATION
 		PRINT_D(HOSTAPD_DBG,"Downloading AP firmware\n");
@@ -3673,7 +3663,7 @@ static int WILC_WFI_change_virt_intf(struct wiphy *wiphy,struct net_device *dev,
 		dev->ieee80211_ptr->iftype = type;
 		priv->wdev->iftype = type;
 
-		printk("(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
+		PRINT_D(CORECONFIG_DBG, "(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
 		//host_int_set_operation_mode((WILC_Uint32)priv->hWILCWFIDrv,AP_MODE);
 
 		#ifndef SIMULATION
@@ -4463,7 +4453,6 @@ int WILC_WFI_update_stats(struct wiphy *wiphy, u32 pktlen , u8 changed)
 		break;
 		case WILC_WFI_TX_PKT:
 		{
-			//WILC_PRINTF("In Tx Receive Packet\n");
 			priv->netstats.tx_packets++;
 			priv->netstats.tx_bytes += pktlen;
 			priv->netstats.tx_time = get_jiffies_64();
@@ -4662,7 +4651,7 @@ struct wireless_dev* WILC_WFI_WiphyRegister(struct net_device *net)
 	ret = host_int_init(&priv->hWILCWFIDrv);
 	if(ret)
 	{
-		WILC_PRINTF("Error Init Driver\n");
+		PRINT_ER("Error Init Driver\n");
 	}
 #endif
 	return wdev;
@@ -4759,7 +4748,7 @@ int WILC_WFI_DeInitHostInt(struct net_device *net)
 	#ifdef DISABLE_PWRSAVE_AND_SCAN_DURING_IP
 	if(op_ifcs==0)
 	{
-		printk("destroy during ip\n");
+		PRINT_D(CORECONFIG_DBG, "destroy during ip\n");
 		WILC_TimerDestroy(&hDuringIpTimer,WILC_NULL);
 	}
 	#endif

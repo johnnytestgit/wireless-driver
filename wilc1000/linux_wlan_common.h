@@ -43,7 +43,6 @@ enum debug_region{
 #define FIRM_DBG	  		(1<<Firmware_debug)
 
 #if defined (WILC_DEBUGFS)
-extern void kmsgdump_write(char *fmt, ...);
 extern int wilc_debugfs_init(void);
 extern void wilc_debugfs_remove(void);
 
@@ -55,26 +54,33 @@ extern atomic_t DEBUG_LEVEL;
 #define WRN			(1 << 2)
 #define ERR			(1 << 3)
 
-#define PRINT_D(region,...)	do{ if((atomic_read(&DEBUG_LEVEL) & DEBUG) && ((atomic_read(&REGION))&(region))){printk("DBG [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write("DBG [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write(__VA_ARGS__);\
-							printk(__VA_ARGS__);}}while(0)
+#define PRINT_D(region,...)	do{ \
+								if((atomic_read(&DEBUG_LEVEL) & DEBUG) && ((atomic_read(&REGION))&(region))) { \
+									printk("DBG [%s: %d]",__FUNCTION__,__LINE__);\
+									printk(__VA_ARGS__); \
+								} \
+							} while(0)
 							
-#define PRINT_INFO(region,...) do{ if((atomic_read(&DEBUG_LEVEL) & INFO) && ((atomic_read(&REGION))&(region))){printk("INFO [%s]",__FUNCTION__);\
-							kmsgdump_write("INFO [%s]",__FUNCTION__);\
-							kmsgdump_write(__VA_ARGS__);\
-							printk(__VA_ARGS__);}}while(0)
+#define PRINT_INFO(region,...) do{ \
+								if((atomic_read(&DEBUG_LEVEL) & INFO) && ((atomic_read(&REGION))&(region))) { \
+									printk("INFO [%s]",__FUNCTION__);\
+									printk(__VA_ARGS__); \
+								} \
+							} while(0)
 
-#define PRINT_WRN(region,...) do{ if((atomic_read(&DEBUG_LEVEL) & WRN) && ((atomic_read(&REGION))&(region))){printk("WRN [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write("WRN [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write(__VA_ARGS__);\
-							printk(__VA_ARGS__);}}while(0)
+#define PRINT_WRN(region,...) do{ \
+								if((atomic_read(&DEBUG_LEVEL) & WRN) && ((atomic_read(&REGION))&(region))) { \
+									printk("WRN [%s: %d]",__FUNCTION__,__LINE__);\
+									printk(__VA_ARGS__); \
+								} \
+							} while(0)
 
-#define PRINT_ER(...)	do{ if((atomic_read(&DEBUG_LEVEL) & ERR)) {	\
-							printk("ERR [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write("ERR [%s: %d]",__FUNCTION__,__LINE__);\
-							kmsgdump_write(__VA_ARGS__);\
-							printk(__VA_ARGS__);}}while(0)
+#define PRINT_ER(...)	do{ \
+							if((atomic_read(&DEBUG_LEVEL) & ERR)) {	\
+								printk("ERR [%s: %d]",__FUNCTION__,__LINE__);\
+								printk(__VA_ARGS__); \
+							} \
+						} while(0)
 
 #else
 
@@ -144,8 +150,9 @@ ex)
 */
 
 #else
+	/* base on SAMA5D3_Xplained Board */
 	#define MODALIAS 	"WILC_SPI"
-	#define GPIO_NUM	139
+	#define GPIO_NUM	0x44
 #endif
 	
 

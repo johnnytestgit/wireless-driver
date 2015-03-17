@@ -276,8 +276,7 @@ static void wilc_wlan_txq_add_to_tail(struct txq_entry_t *tqe)
 static int wilc_wlan_txq_add_to_head(struct txq_entry_t *tqe)
 {
 	wilc_wlan_dev_t *p = (wilc_wlan_dev_t *)&g_wlan;
-//printk("### wilc_wlan_txq_add_to_head() locking txq_lock\n");
-		unsigned long flags;
+	unsigned long flags;
 	/*Added by Amr - BugID_4720*/
 	if(p->os_func.os_wait(p->txq_add_to_head_lock, CFG_PKTS_TIMEOUT))
 		return -1;
@@ -740,7 +739,6 @@ static int wilc_wlan_rxq_add(struct rxq_entry_t *rqe)
 	}
 	p->rxq_entries+=1;
 	PRINT_D(RX_DBG,"Number of queue entries: %d\n",p->rxq_entries);
-	//printk("Number of queue entries: %d\n",p->rxq_entries);
 	p->os_func.os_leave_cs(p->rxq_lock);
 	return p->rxq_entries;
 }
@@ -905,7 +903,8 @@ INLINE void chip_wakeup(void)
 		do
 		{
 			/* Wait for the chip to stabilize*/
-			WILC_Sleep(2);
+//			WILC_Sleep(2);
+			mdelay(3);
 
 			// Make sure chip is awake. This is an extra step that can be removed
 			// later to avoid the bus access overhead
@@ -982,7 +981,6 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 	int counter;
 	int timeout;
 	uint32_t vmm_table[WILC_VMM_TBL_SIZE];
-	//printk("T");
 	p->txq_exit = 0;
 	do {
 		if (p->quit)
@@ -1086,7 +1084,7 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 			if(counter > 200)
 			{
 				counter = 0;
-				printk("Looping in tx ctrl , forcce quit\n");
+				PRINT_D(TX_DBG, "Looping in tx ctrl , forcce quit\n");
 				ret = p->hif_func.hif_write_reg(WILC_HOST_TX_CTRL, 0);
 				break;
 			}
@@ -1241,7 +1239,6 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 					char * pBSSID = ((struct tx_complete_data*)(tqe->priv))->pBssid;
 					buffer_offset = ETH_ETHERNET_HDR_OFFSET;
 					//copy the bssid at the sart of the buffer
-					//printk("BSSID[%x][%x][%x]\n",pBSSID[0],pBSSID[1],pBSSID[2]);
 					memcpy(&txb[offset+4],pBSSID ,6);
 				}
 #ifdef WILC_FULLY_HOSTING_AP
@@ -1275,7 +1272,6 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 		/**
 			lock the bus
 		**/
-		//PRINT_D(GENERIC_DBG,"Locking hif_lock\n");
 		acquire_bus(ACQUIRE_AND_WAKEUP);
 
 		ret = p->hif_func.hif_clear_int_ext(ENABLE_TX_VMM);
@@ -1323,7 +1319,6 @@ static void wilc_wlan_handle_rxq(void)
 
 
 	do {
-//		printk("[%s:%d]in 1st do-while\n",__FUNCTION__,__LINE__);
 		if (p->quit){
 			PRINT_D(RX_DBG,"exit 1st do-while due to Clean_UP function \n");
 			p->os_func.os_signal(p->cfg_wait);
@@ -1373,7 +1368,6 @@ static void wilc_wlan_handle_rxq(void)
 
 			if(pkt_offset & IS_MANAGMEMENT)
 				{
-					//PRINT_D(GENERIC_DBG,"Mgmt FRAME Received at host--\n\n");
 					//reset mgmt indicator bit, to use pkt_offeset in furthur calculations
 					pkt_offset &= ~(IS_MANAGMEMENT | IS_MANAGMEMENT_CALLBACK | IS_MGMT_STATUS_SUCCES);
 
@@ -1410,7 +1404,6 @@ static void wilc_wlan_handle_rxq(void)
 					**/
 				PRINT_D(RX_DBG,"p->cfg_seq_no = %d - rsp.seq_no = %d\n",p->cfg_seq_no,rsp.seq_no);
 					if (p->cfg_seq_no == rsp.seq_no) {
-						//PRINT_D(GENERIC_DBG, "Unlocking cfg_wait\n");
 						p->os_func.os_signal(p->cfg_wait);
 					}
 					//p->os_func.os_signal(p->cfg_wait);
@@ -1471,7 +1464,7 @@ static void wilc_pllupdate_isr_ext(uint32_t int_stats){
 
 	//poll till read a valid data
 	while(!(ISWILC1000(wilc_get_chipid(WILC_TRUE))&&--trials)) {
-		printk("PLL update retrying\n");
+		PRINT_D(TX_DBG, "PLL update retrying\n");
 		g_wlan.os_func.os_atomic_sleep(1);
 	}
 }
@@ -1605,7 +1598,9 @@ void wilc_handle_isr(void)
 	}
 
 	if(!(int_status & (ALL_INT_EXT))) {
-		printk(">> UNKNOWN_INTERRUPT - 0x%08x\n",int_status);
+#ifdef WILC_SDIO
+		PRINT_D(TX_DBG, ">> UNKNOWN_INTERRUPT - 0x%08x\n",int_status);
+#endif
 		wilc_unknown_isr_ext();
 	}
 #if ((!defined WILC_SDIO) || (defined WILC_SDIO_IRQ_GPIO))
@@ -1634,7 +1629,7 @@ static int wilc_wlan_firmware_download(const uint8_t *buffer, uint32_t buffer_si
 {
 	extern void * get_fw_buffer(void);
 	dma_buffer = (uint8_t *)get_fw_buffer();
-	printk("[MMM] dma_buffer = 0x%x\n", dma_buffer);
+	PRINT_D(TX_DBG, "fw_buffer = 0x%x\n", dma_buffer);
 }
 #else
 	dma_buffer = (uint8_t *)g_wlan.os_func.os_malloc(blksz);
@@ -2066,7 +2061,7 @@ static int wilc_wlan_cfg_set(int start, uint32_t wid, uint8_t *buffer, uint32_t 
 
 		if(p->os_func.os_wait(p->cfg_wait,CFG_PKTS_TIMEOUT))
 		{
-			printk("Set Timed Out\n");
+			PRINT_D(TX_DBG, "Set Timed Out\n");
 			ret_size = 0;
 		}
 		p->cfg_frame_in_use = 0;
@@ -2105,7 +2100,7 @@ static int wilc_wlan_cfg_get(int start, uint32_t wid, int commit,uint32_t drvHan
 
 		if(p->os_func.os_wait(p->cfg_wait,CFG_PKTS_TIMEOUT))
 		{
-			printk("Get Timed Out\n");
+			PRINT_D(TX_DBG, "Get Timed Out\n");
 			ret_size = 0;
 		}
 		PRINT_D(GENERIC_DBG, "[WILC]Get Response received\n");
@@ -2360,7 +2355,7 @@ int wilc_wlan_init(wilc_wlan_inp_t *inp, wilc_wlan_oup_t *oup)
 	extern void * get_tx_buffer(void);
 	extern void * get_rx_buffer(void);
 
-	printk("[MMM] malloc before, g_wlan.tx_buffer = 0x%x, g_wlan.rx_buffer = 0x%x\n", g_wlan.tx_buffer, g_wlan.rx_buffer);
+	PRINT_D(TX_DBG, "malloc before, g_wlan.tx_buffer = 0x%x, g_wlan.rx_buffer = 0x%x\n", g_wlan.tx_buffer, g_wlan.rx_buffer);
 #endif
 
 
@@ -2371,7 +2366,7 @@ int wilc_wlan_init(wilc_wlan_inp_t *inp, wilc_wlan_oup_t *oup)
 #else
 		g_wlan.tx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.tx_buffer_size);
 #endif
-	printk("[MMM] g_wlan.tx_buffer = 0x%x\n", g_wlan.tx_buffer);
+	PRINT_D(TX_DBG, "g_wlan.tx_buffer = 0x%x\n", g_wlan.tx_buffer);
 
 	if (g_wlan.tx_buffer == WILC_NULL) {
 		/* ENOBUFS	105 */
@@ -2388,7 +2383,7 @@ int wilc_wlan_init(wilc_wlan_inp_t *inp, wilc_wlan_oup_t *oup)
   #else
 		g_wlan.rx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.rx_buffer_size);
   #endif
-	printk("[MMM] g_wlan.rx_buffer =0x%x\n", g_wlan.rx_buffer);
+	PRINT_D(TX_DBG, "g_wlan.rx_buffer =0x%x\n", g_wlan.rx_buffer);
 	if (g_wlan.rx_buffer == WILC_NULL)
 	{
 		/* ENOBUFS	105 */

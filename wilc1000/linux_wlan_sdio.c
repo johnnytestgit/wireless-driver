@@ -78,7 +78,7 @@ int linux_sdio_cmd52(sdio_cmd52_t *cmd){
 	sdio_release_host(func);
 
 	if (ret < 0) {
-		printk("wilc_sdio_cmd52..failed, err(%d)\n", ret);
+		PRINT_ER("wilc_sdio_cmd52..failed, err(%d)\n", ret);
 		return 0;
 	}
 	return 1;
@@ -108,7 +108,7 @@ int linux_sdio_cmd52(sdio_cmd52_t *cmd){
 
 
 	if (ret < 0) {
-		printk("wilc_sdio_cmd53..failed, err(%d)\n", ret);
+		PRINT_ER("wilc_sdio_cmd53..failed, err(%d)\n", ret);
 		return 0;
 	}
 
@@ -134,6 +134,8 @@ static int linux_sdio_probe(struct sdio_func *func, const struct sdio_device_id 
 		PRINT_ER("Couldn't initialize netdev\n");
 		return -1;
 	}
+
+	printk("Driver Initializing success\n");
 	return 0;
 }
 
@@ -196,7 +198,7 @@ static int linux_sdio_set_speed(int speed)
 	ios.clock = speed;
 	local_sdio_func->card->host->ops->set_ios(local_sdio_func->card->host,&ios);
 	sdio_release_host(local_sdio_func);
-	PRINT_ER("@@@@@@@@@@@@ change SDIO speed to %d @@@@@@@@@\n", speed);
+	PRINT_INFO(INIT_DBG,"@@@@@@@@@@@@ change SDIO speed to %d @@@@@@@@@\n", speed);
 
 	return 1;
 }

@@ -6,7 +6,7 @@ Overwrite onto the linux-at91 kernel directory already we have.
 ![](https://github.com/atmchrispark/Image/blob/master/driver_image.jpg)  
 
 To include the WILC1000 driver in kernel build, relevant Kconfig and Makefile are also changed.  
-   * linux-at91/drivers/wireless/Kconfig  
+   * linux-at91/drivers/net/wireless/Kconfig  
 ```
 config AT76C50X_USB  
 ... skip  

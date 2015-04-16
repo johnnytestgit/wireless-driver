@@ -216,9 +216,15 @@ void refresh_scan(void* pUserVoid,uint8_t all,WILC_Bool bDirectScan){
 				rssi = get_rssi_avg(pstrNetworkInfo);
 				if(WILC_memcmp("DIRECT-", pstrNetworkInfo->au8ssid, 7) || bDirectScan)
 				{
-					bss = cfg80211_inform_bss(wiphy, channel, pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
+					bss = cfg80211_inform_bss(wiphy, channel, CFG80211_BSS_FTYPE_UNKNOWN, pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
 									pstrNetworkInfo->u16BeaconPeriod, (const u8*)pstrNetworkInfo->pu8IEs,
 									(size_t)pstrNetworkInfo->u16IEsLen, (((WILC_Sint32)rssi) * 100), GFP_KERNEL);
+#else
+ 					bss = cfg80211_inform_bss(wiphy, channel, pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
+ 									pstrNetworkInfo->u16BeaconPeriod, (const u8*)pstrNetworkInfo->pu8IEs,
+ 									(size_t)pstrNetworkInfo->u16IEsLen, (((WILC_Sint32)rssi) * 100), GFP_KERNEL);
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
 					cfg80211_put_bss(wiphy,bss);
 #else
@@ -451,10 +457,15 @@ static void CfgScanResult(tenuScanEvent enuScanEvent, tstrNetworkInfo* pstrNetwo
 
 							if(!(WILC_memcmp("DIRECT-", pstrNetworkInfo->au8ssid, 7) ))
 							{
-
-								bss = cfg80211_inform_bss(wiphy, channel, pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
+								bss = cfg80211_inform_bss(wiphy, channel, CFG80211_BSS_FTYPE_UNKNOWN,  pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
 											pstrNetworkInfo->u16BeaconPeriod, (const u8*)pstrNetworkInfo->pu8IEs,
 											(size_t)pstrNetworkInfo->u16IEsLen, (((WILC_Sint32)pstrNetworkInfo->s8rssi) * 100), GFP_KERNEL);
+#else
+ 								bss = cfg80211_inform_bss(wiphy, channel, pstrNetworkInfo->au8bssid, pstrNetworkInfo->u64Tsf, pstrNetworkInfo->u16CapInfo,
+ 											pstrNetworkInfo->u16BeaconPeriod, (const u8*)pstrNetworkInfo->pu8IEs,
+ 											(size_t)pstrNetworkInfo->u16IEsLen, (((WILC_Sint32)pstrNetworkInfo->s8rssi) * 100), GFP_KERNEL);
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
 								cfg80211_put_bss(wiphy,bss);
 #else
@@ -2664,7 +2675,9 @@ void WILC_WFI_p2p_rx (struct net_device *dev,uint8_t *buff, uint32_t size)
 						{
 								PRINT_D(GENERIC_DBG,"Sending P2P to host without extra elemnt\n");
 							//extra attribute for sig_dbm: signal strength in mBm, or 0 if unknown
-							#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+							#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
+							cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size-7,0);
+							#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
 							cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size-7,0,GFP_ATOMIC);
 							#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 							cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size-7,GFP_ATOMIC);
@@ -2687,7 +2700,9 @@ void WILC_WFI_p2p_rx (struct net_device *dev,uint8_t *buff, uint32_t size)
 			}
 		}
 
-		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18 ,0))
+		cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size-7,0);
+		#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
 		cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size-7,0,GFP_ATOMIC);
 		#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 		cfg80211_rx_mgmt(priv->wdev,s32Freq, 0, buff,size,GFP_ATOMIC);

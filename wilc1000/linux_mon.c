@@ -395,8 +395,8 @@ static netdev_tx_t WILC_WFI_mon_xmit(struct sk_buff *skb,
     ret = WILC_WFI_Tx(skb,mon_priv->real_ndev);
 	#elif USE_WIRELESS
 	//Identify if Ethernet or MAC header (data or mgmt)
-	memcpy(srcAdd,& skb->data[11],6);
-	memcpy(bssid, &skb->data[17],6);
+	memcpy(srcAdd,& skb->data[10],6);
+	memcpy(bssid, &skb->data[16],6);
 	//if source address and bssid fields are equal>>Mac header
 	/*send it to mgmt frames handler */
 	if(!(memcmp(srcAdd,bssid,6)))

@@ -1932,7 +1932,11 @@ static int WILC_WFI_get_station(struct wiphy *wiphy, struct net_device *dev,
 			return s32Error;
 		}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)	//0421
+		sinfo->filled |= BIT(NL80211_STA_INFO_INACTIVE_TIME);
+#else
 		sinfo->filled |= STATION_INFO_INACTIVE_TIME;
+#endif
 
 		host_int_get_inactive_time(priv->hWILCWFIDrv, mac,&(inactive_time));
 		sinfo->inactive_time = 1000 * inactive_time;
@@ -1946,12 +1950,14 @@ static int WILC_WFI_get_station(struct wiphy *wiphy, struct net_device *dev,
 		tstrStatistics strStatistics;
 		host_int_get_statistics(priv->hWILCWFIDrv,&strStatistics);
 
-        /*
-         * tony: 2013-11-13
-         * tx_failed introduced more than
-         * kernel version 3.0.0
-         */
-    #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,0,0)
+
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)	//0421
+		sinfo->filled |= BIT(NL80211_STA_INFO_SIGNAL) |
+						BIT( NL80211_STA_INFO_RX_PACKETS) |
+						BIT(NL80211_STA_INFO_TX_PACKETS) |
+						BIT(NL80211_STA_INFO_TX_FAILED) |
+						BIT(NL80211_STA_INFO_TX_BITRATE);
+    #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0)
 		sinfo->filled |= STATION_INFO_SIGNAL | STATION_INFO_RX_PACKETS | STATION_INFO_TX_PACKETS
 			| STATION_INFO_TX_FAILED | STATION_INFO_TX_BITRATE;
     #else
@@ -2940,27 +2946,57 @@ void WILC_WFI_add_wilcvendorspec(WILC_Uint8 * buff)
 extern linux_wlan_t* g_linux_wlan;
 extern WILC_Bool bEnablePS;
 int WILC_WFI_mgmt_tx(struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-	struct wireless_dev *wdev,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+			struct wireless_dev *wdev,
+			struct cfg80211_mgmt_tx_params *params,
+			u64 *cookie)
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+			struct wireless_dev *wdev,
+			struct ieee80211_channel *chan,
+			bool offchan,
+			unsigned int wait,
+			const u8 *buf,
+			size_t len,
+			bool no_cck,
+			bool dont_wait_for_ack, u64 *cookie)
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
+			struct wireless_dev *wdev,
+			struct ieee80211_channel *chan, bool offchan,
+			enum nl80211_channel_type channel_type,
+			bool channel_type valid,
+			unsigned int wait, const u8 *buf,
+			size_t len, bool no_cck,
+			bool dont_wait_for_ack, u64 *cookie)
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 3, 0))
+			struct net_device *dev,
+			struct ieee80211_channel *chan, bool offchan,
+			enum nl80211_channel_type channel_type,
+			bool channel_type_valid,
+			unsigned int wait, const u8 *buf,
+			size_t len, bool no_cck,
+			bool dont_wait_for_ack, u64 *cookie)
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 0))
+			struct net_device *dev,
+			struct ieee80211_channel *chan, bool offchan,
+			enum nl80211_channel_type channel_type,
+			bool channel_type_valid,
+			unsigned int wait, const u8 *buf,
+			size_t len, bool no_cck, u64 *cookie)
 #else
-	struct net_device *dev,
+			struct net_device *dev,
+			struct ieee80211_channel *chan, bool offchan,
+			enum nl80211_channel_type channel_type,
+			bool channel_type_valid,
+			unsigned int wait, const u8 *buf,
+			size_t len, u64 *cookie)
 #endif
-	struct ieee80211_channel *chan, bool offchan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-	enum nl80211_channel_type channel_type,
-	bool channel_type_valid,
-#endif
-	unsigned int wait,
-	const u8 *buf,
-	size_t len,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0))
-	bool no_cck,
-#endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
-	bool dont_wait_for_ack,
-#endif
-	u64 *cookie)
 {
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+	struct ieee80211_channel *chan = params->chan;
+	unsigned int wait = params->wait;
+	const u8 *buf = params->buf;
+	size_t len = params->len;
+	#endif
 	const struct ieee80211_mgmt *mgmt;
 	struct p2p_mgmt_data *mgmt_tx;
 	struct WILC_WFI_priv* priv;
@@ -3302,7 +3338,11 @@ static int WILC_WFI_dump_station(struct wiphy *wiphy, struct net_device *dev,
 	 priv = wiphy_priv(wiphy);
 	//priv = netdev_priv(priv->wdev->netdev);
 
-	sinfo->filled |= STATION_INFO_SIGNAL ;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))	//0421
+	sinfo->filled |= BIT(NL80211_STA_INFO_SIGNAL);
+#else
+	sinfo->filled |= STATION_INFO_SIGNAL;
+#endif
 
 	host_int_get_rssi(priv->hWILCWFIDrv, &(sinfo->signal));
 
@@ -4137,8 +4177,15 @@ static int  WILC_WFI_add_station(struct wiphy *wiphy, struct net_device *dev,
 *  @version	1.0
 */
 static int WILC_WFI_del_station(struct wiphy *wiphy, struct net_device *dev,
-	u8 *mac)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+				struct station_del_parameters *params)
+#else
+				u8 *mac)
+#endif
 {
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+	u8 *mac = params->mac;
+	#endif
 	WILC_Sint32 s32Error = WILC_SUCCESS;
 	struct WILC_WFI_priv* priv;
 	perInterface_wlan_t* nic;
@@ -4270,15 +4317,20 @@ static int WILC_WFI_change_station(struct wiphy *wiphy, struct net_device *dev,
 *  @date	01 JUL 2012
 *  @version	1.0
 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)		/* tony for v3.8 support */
-struct wireless_dev * WILC_WFI_add_virt_intf(struct wiphy *wiphy, const char *name,
-				enum nl80211_iftype type, u32 *flags,
-				struct vif_params *params)
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0)	/* tony for v3.6 support */
-struct wireless_dev * WILC_WFI_add_virt_intf(struct wiphy *wiphy, char *name,
-                           	enum nl80211_iftype type, u32 *flags,
-                           	struct vif_params *params)
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)
+struct wireless_dev *WILC_WFI_add_virt_intf(struct wiphy *wiphy, const char *name,
+						unsigned char name_assign_type,
+						enum nl80211_iftype type, u32 *flags,
+						struct vif_params *params)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)         /* tony for v3.8 support */
+struct wireless_dev *WILC_WFI_add_virt_intf(struct wiphy *wiphy, const char *name,
+					    enum nl80211_iftype type, u32 *flags,
+					    struct vif_params *params)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)       /* tony for v3.6 support */
+struct wireless_dev *WILC_WFI_add_virt_intf(struct wiphy *wiphy, char *name,
+					    enum nl80211_iftype type, u32 *flags,
+					    struct vif_params *params)
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
 int WILC_WFI_add_virt_intf(struct wiphy *wiphy, char *name,
                		enum nl80211_iftype type, u32 *flags,
                       	struct vif_params *params)

@@ -151,8 +151,8 @@ int sdio_init(wilc_wlan_inp_t *inp, wilc_debug_func func);
 int sdio_reset(void *pv);
 void chip_sleep_manually(WILC_Uint32 u32SleepTime);
 void chip_wakeup(void);
-void host_wakeup_notify();
-void host_sleep_notify();
+void host_wakeup_notify(void);
+void host_sleep_notify(void);
 void chip_allow_sleep(void);
 
 extern uint8_t u8SuspendOnEvent;

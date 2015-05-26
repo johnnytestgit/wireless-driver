@@ -959,14 +959,14 @@ void chip_sleep_manually(WILC_Uint32 u32SleepTime)
 
 }
 
-void host_wakeup_notify()
+void host_wakeup_notify(void)
 {
 	acquire_bus(ACQUIRE_ONLY);
 	g_wlan.hif_func.hif_write_reg(0x10b0, 1);
 	release_bus(RELEASE_ONLY);
 }
 
-void host_sleep_notify()
+void host_sleep_notify(void)
 {
 	acquire_bus(ACQUIRE_ONLY);
 	g_wlan.hif_func.hif_write_reg(0x10ac, 1);

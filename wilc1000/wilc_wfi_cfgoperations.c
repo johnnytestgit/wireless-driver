@@ -4637,6 +4637,12 @@ _fail_:
 	return NULL;
 
 }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
+static const struct wiphy_wowlan_support wowlan_support = {
+        .flags = WIPHY_WOWLAN_ANY
+};
+#endif
 /**
 *  @brief 	WILC_WFI_WiphyRegister
 *  @details 	Registering of the wiphy structure and interface modes
@@ -4670,7 +4676,9 @@ struct wireless_dev* WILC_WFI_WiphyRegister(struct net_device *net)
 
 	/*Maximum number of probed ssid to be added by user for the scan request*/
 	wdev->wiphy->max_scan_ssids = MAX_NUM_PROBED_SSID;
-	#if LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
+	wdev->wiphy->wowlan = &wowlan_support;
+	#elif LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
 	wdev->wiphy->wowlan.flags = WIPHY_WOWLAN_ANY;
 	#endif
 	#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32)

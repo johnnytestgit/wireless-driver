@@ -365,91 +365,6 @@ static int sdio_write(uint32_t addr, uint8_t *buf, uint32_t size)
 	nleft = size%block_size;
 
 	if (nblk > 0) {
-  
-#if defined(PLAT_AML8726_M3_BACKUP) //johnny
-		int i;
-
-		for(i=0; i<nblk; i++)
-		{
-			cmd.block_mode = 0; //1;
-			cmd.increment = 1;
-			cmd.count = block_size; //nblk;
-			cmd.buffer = buf;
-			cmd.block_size = block_size;
-			if (addr > 0) {
-				if (!sdio_set_func0_csa_address(addr))
-					goto _fail_;
-			}
-			if (!g_sdio.sdio_cmd53(&cmd)) {
-				g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], block send...\n",addr);
-				goto _fail_;
-			}
-			
-			if (addr > 0)	
-				addr += block_size;	//addr += nblk*block_size;
-			
-			buf += block_size;		//buf += nblk*block_size;
-		}
-
-#elif defined(PLAT_AML8726_M3) //johnny
-
-	    int i;
-	    int rest;
-	    int seg_cnt;
-
-	    seg_cnt = (nblk*block_size)/MAX_SEG_SIZE;
-	    rest = (nblk*block_size) & (MAX_SEG_SIZE-1);
-
-	    for ( i = 0 ; i < seg_cnt ; i ++ )
-	    {
-	      cmd.block_mode = 1;
-	      cmd.increment = 1;
-	      cmd.count = MAX_SEG_SIZE/block_size;
-	      cmd.buffer = buf;
-	      cmd.block_size = block_size;
-
-	      if (addr > 0) {
-	        if (!sdio_set_func0_csa_address(addr))
-	          goto _fail_;
-	      }
-	      if (!g_sdio.sdio_cmd53(&cmd)) {
-	        g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], block send...\n",addr);
-	        goto _fail_;
-	      }
-
-	      if (addr > 0) 
-	        addr += MAX_SEG_SIZE;
-      
-	      buf += MAX_SEG_SIZE;
-
-	    }
-
-
-	  	if ( rest > 0 ) {
-	  		cmd.block_mode = 1;
-	  		cmd.increment = 1;
-	  		cmd.count = rest/block_size;
-	  		cmd.buffer = buf;
-	  		cmd.block_size = block_size; //johnny : prevent it from setting unexpected value
-
-	  		if (addr > 0) {
-	  			if (!sdio_set_func0_csa_address(addr))
-	  				goto _fail_;
-	  		}
-	  		if (!g_sdio.sdio_cmd53(&cmd)) {
-	  			g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], bytes send...\n",addr);
-	  			goto _fail_;
-	  		}
-
-	      if (addr > 0) 
-	        addr += rest;
-      
-	      buf += rest;
-
-	    }
-
-#else
-
 		cmd.block_mode = 1;
 		cmd.increment = 1;
 		cmd.count = nblk;
@@ -466,8 +381,6 @@ static int sdio_write(uint32_t addr, uint8_t *buf, uint32_t size)
 		if (addr > 0)	
 			addr += nblk*block_size;
 		buf += nblk*block_size;
-
-#endif //platform
 
 #if 0
 		if (!sdio_check_bs())
@@ -619,91 +532,6 @@ static int sdio_read(uint32_t addr, uint8_t *buf, uint32_t size)
 	nleft = size%block_size;
 
 	if (nblk > 0) {
-
-#if defined(PLAT_AML8726_M3_BACKUP) //johnny
-
-		int i;
-
-		for(i=0; i<nblk; i++)
-		{
-			cmd.block_mode = 0; //1;
-			cmd.increment = 1;
-			cmd.count = block_size; //nblk;
-			cmd.buffer = buf;
-			cmd.block_size = block_size;
-			if (addr > 0) {
-				if (!sdio_set_func0_csa_address(addr))
-					goto _fail_;
-			}
-			if (!g_sdio.sdio_cmd53(&cmd)) {
-				g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], block read...\n",addr);
-				goto _fail_;
-			}
-			if (addr > 0)	
-				addr += block_size;		//addr += nblk*block_size;
-			buf += block_size;		//buf += nblk*block_size;
-		}
-
-#elif defined(PLAT_AML8726_M3) //johnny
-
-	    int i;
-	    int rest;
-	    int seg_cnt;
-
-	    seg_cnt = (nblk*block_size)/MAX_SEG_SIZE;
-	    rest = (nblk*block_size) & (MAX_SEG_SIZE-1);
-
-	    for ( i = 0 ; i < seg_cnt ; i ++ )
-	    {
-	      cmd.block_mode = 1;
-	      cmd.increment = 1;
-	      cmd.count = MAX_SEG_SIZE/block_size;
-	      cmd.buffer = buf;
-	      cmd.block_size = block_size;
-
-     
-	      if (addr > 0) {
-	        if (!sdio_set_func0_csa_address(addr))
-	          goto _fail_;
-	      }
-	      if (!g_sdio.sdio_cmd53(&cmd)) {
-	        g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], block read...\n",addr);
-	        goto _fail_;
-	      }
-
-	      if (addr > 0) 
-	        addr += MAX_SEG_SIZE;
-      
-	      buf += MAX_SEG_SIZE;
-
-	    }
-
-
-	    if ( rest > 0 ) {
-	      cmd.block_mode = 1;
-	      cmd.increment = 1;
-	      cmd.count = rest/block_size;
-	      cmd.buffer = buf;
-	      cmd.block_size = block_size; //johnny : prevent it from setting unexpected value
-
-	      if (addr > 0) {
-	        if (!sdio_set_func0_csa_address(addr))
-	          goto _fail_;
-	      }
-	      if (!g_sdio.sdio_cmd53(&cmd)) {
-	        g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed cmd53 [%x], block read...\n",addr);
-	        goto _fail_;
-	      }
-
-	      if (addr > 0) 
-	        addr += rest;
-      
-	      buf += rest;
-
-	    }
-
-#else
-
 		cmd.block_mode = 1;
 		cmd.increment = 1;
 		cmd.count = nblk;
@@ -720,8 +548,6 @@ static int sdio_read(uint32_t addr, uint8_t *buf, uint32_t size)
 		if (addr > 0)	
 			addr += nblk*block_size;
 		buf += nblk*block_size;
-
-#endif //platform
 
 #if 0
 		if (!sdio_check_bs())
@@ -773,6 +599,30 @@ _fail_:
 static int sdio_deinit(void *pv)
 {
 	return 1;	
+}
+
+
+int sdio_reset(void *pv)
+{
+
+    sdio_cmd52_t cmd;
+                
+   // printk("De Init SDIO\n");              
+    /**
+                    func 1 interrupt enable
+    **/
+    cmd.read_write = 1;
+    cmd.function = 0;
+    cmd.raw = 0;
+    cmd.address = 0x6;
+    cmd.data = 0x8;
+    if (!g_sdio.sdio_cmd52(&cmd)) 
+	{
+    	 g_sdio.dPrint(N_ERR, "[atwilc sdio]: Fail cmd 52, reset cmd ...\n");
+    }
+
+
+                return 1;              
 }
 
 static int sdio_sync(void)
@@ -833,31 +683,33 @@ static int sdio_sync(void)
 	return 1;
 }
 
-static int sdio_init(wilc_wlan_inp_t *inp, wilc_debug_func func)
+int sdio_init(wilc_wlan_inp_t *inp, wilc_debug_func func)
 {
 	sdio_cmd52_t cmd;
 	int loop;
 	uint32_t chipid;
-	memset(&g_sdio, 0, sizeof(wilc_sdio_t));
+	if(inp != NULL)
+	{
+		memset(&g_sdio, 0, sizeof(wilc_sdio_t));
 
-	g_sdio.dPrint = func;
-	g_sdio.os_context = inp->os_context.os_private;
-	memcpy((void *)&g_sdio.os_func, (void *)&inp->os_func, sizeof(wilc_wlan_os_func_t));
+		g_sdio.dPrint = func;
+		g_sdio.os_context = inp->os_context.os_private;
+		memcpy((void *)&g_sdio.os_func, (void *)&inp->os_func, sizeof(wilc_wlan_os_func_t));
 
-	if (inp->io_func.io_init) {	
-		if (!inp->io_func.io_init(g_sdio.os_context)) {
-			g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed io init bus...\n");
+		if (inp->io_func.io_init) {	
+			if (!inp->io_func.io_init(g_sdio.os_context)) {
+				g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed io init bus...\n");
+				return 0;
+			}
+		} else {
 			return 0;
 		}
-	} else {
-		return 0;
-	}
 
-	g_sdio.sdio_cmd52 	= inp->io_func.u.sdio.sdio_cmd52;
-	g_sdio.sdio_cmd53 	= inp->io_func.u.sdio.sdio_cmd53;
-	g_sdio.sdio_set_max_speed 	= inp->io_func.u.sdio.sdio_set_max_speed;
-	g_sdio.sdio_set_default_speed 	= inp->io_func.u.sdio.sdio_set_default_speed;
-	
+		g_sdio.sdio_cmd52 	= inp->io_func.u.sdio.sdio_cmd52;
+		g_sdio.sdio_cmd53 	= inp->io_func.u.sdio.sdio_cmd53;
+		g_sdio.sdio_set_max_speed 	= inp->io_func.u.sdio.sdio_set_max_speed;
+		g_sdio.sdio_set_default_speed 	= inp->io_func.u.sdio.sdio_set_default_speed;
+	}
 	/**
 		function 0 csa enable 
 	**/
@@ -940,18 +792,20 @@ static int sdio_init(wilc_wlan_inp_t *inp, wilc_debug_func func)
 	/**
 		make sure can read back chip id correctly
 	**/
-	if (!sdio_read_reg(0x1000, &chipid)) {
-		g_sdio.dPrint(N_ERR, "[wilc sdio]: Fail cmd read chip id...\n");
-		goto _fail_;
+	if(inp != NULL)
+	{
+		if (!sdio_read_reg(0x1000, &chipid)) {
+			g_sdio.dPrint(N_ERR, "[wilc sdio]: Fail cmd read chip id...\n");
+			goto _fail_;
+		}
+		g_sdio.dPrint(N_ERR, "[wilc sdio]: chipid (%08x)\n", chipid);
+		if( (chipid & 0xfff) > 0x2a0) {
+			g_sdio.has_thrpt_enh3 = 1;
+		} else {
+			g_sdio.has_thrpt_enh3 = 0;
+		}
+		g_sdio.dPrint(N_ERR, "[wilc sdio]: has_thrpt_enh3 = %d...\n", g_sdio.has_thrpt_enh3);
 	}
-	g_sdio.dPrint(N_ERR, "[wilc sdio]: chipid (%08x)\n", chipid);
-	if( (chipid & 0xfff) > 0x2a0) {
-		g_sdio.has_thrpt_enh3 = 1;
-	} else {
-		g_sdio.has_thrpt_enh3 = 0;
-	}
-	g_sdio.dPrint(N_ERR, "[wilc sdio]: has_thrpt_enh3 = %d...\n", g_sdio.has_thrpt_enh3);
-
 
 	return 1;
 
@@ -1202,12 +1056,6 @@ static int sdio_sync_ext(int nint /*  how mant interrupts to enable. */)
 	**/
 	if (!sdio_read_reg(WILC_MISC, &reg)) {
 		g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed read misc reg...\n");
-		return 0;
-	}
-	
-	reg &= ~(1 << 8);
-	if (!sdio_write_reg(WILC_MISC, reg)) {
-		g_sdio.dPrint(N_ERR, "[wilc sdio]: Failed write misc reg...\n");
 		return 0;
 	}
 

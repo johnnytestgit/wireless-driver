@@ -65,7 +65,6 @@ unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xb2};
  #define _linux_wlan_device_detection() 	{}
  #define _linux_wlan_device_removal()		{}
 #endif
-
 #ifdef DISABLE_PWRSAVE_AND_SCAN_DURING_IP
 extern WILC_Bool g_obtainingIP;
 #endif
@@ -178,12 +177,6 @@ static struct net_device_stats *mac_stats(struct net_device *dev);
 static int  mac_ioctl(struct net_device *ndev, struct ifreq *req, int cmd);
 static void wilc_set_multicast_list(struct net_device *dev);
 
-
-
-	/*
-	for now - in frmw_to_linux there should be private data to be passed to it 
-	and this data should be pointer to net device
-	*/
 linux_wlan_t* g_linux_wlan = NULL;
 wilc_wlan_oup_t* gpstrWlanOps;
 WILC_Bool bEnablePS = WILC_TRUE;
@@ -625,7 +618,7 @@ static void linux_wlan_atomic_msleep(uint32_t msc){
 	mdelay(msc);	
 }
 static void linux_wlan_dbg(uint8_t *buff){
-	PRINT_D(INIT_DBG,"%d\n", *buff);
+	PRINT_D(INIT_DBG,"%s\n", buff);
 }
 
 static void* linux_wlan_malloc_atomic(uint32_t sz){
@@ -998,7 +991,7 @@ static int linux_wlan_txq_task(void* vp)
 					/* schedule_timeout will allow RX task to run and free buffers.*/					
 					//set_current_state(TASK_UNINTERRUPTIBLE);
 					//timeout = schedule_timeout(timeout); 
-					msleep(TX_BACKOFF_WEIGHT_UNIT_MS << backoff_weight);
+					//msleep(TX_BACKOFF_WEIGHT_UNIT_MS << backoff_weight);
 				} while(/*timeout*/0);
 				backoff_weight += TX_BACKOFF_WEIGHT_INCR_STEP;
 				if(backoff_weight > TX_BACKOFF_WEIGHT_MAX) {
@@ -1162,7 +1155,7 @@ static int linux_wlan_init_test_config(struct net_device *dev, linux_wlan_t* p_n
 
 	unsigned char c_val[64];
 	#ifndef STATIC_MACADDRESS
-	unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xff};
+	unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xb2};
 	#endif
 	unsigned int chipid = 0;
 
@@ -1775,7 +1768,7 @@ static void wlan_deinitialize_threads(linux_wlan_t* nic){
 		if(g_linux_wlan->rx_bh_thread != NULL){
 			kthread_stop(g_linux_wlan->rx_bh_thread);		
 			g_linux_wlan->rx_bh_thread= NULL;
-			}
+		}
 	#endif
 }
 
@@ -2803,13 +2796,7 @@ int wilc_netdev_init(void){
 		/*Name the Devices*/	
 		if(i==0)
 		{
-		#if defined(NM73131)	// tony, 2012-09-20
-			strcpy(ndev->name,"wilc_eth%d");
-		#elif defined(PLAT_CLM9722)			// rachel
-			strcpy(ndev->name,"eth%d");
-		#else //PANDA_BOARD, PLAT_ALLWINNER_A10, PLAT_ALLWINNER_A20, PLAT_ALLWINNER_A31, PLAT_AML8726_M3 or PLAT_WMS8304
-			strcpy(ndev->name,"wlan%d");	
-		#endif
+			strcpy(ndev->name,"wlan%d");
 		}
 		else
 			strcpy(ndev->name,"p2p%d");
@@ -2916,7 +2903,7 @@ static void __exit exit_wilc_driver(void)
 {
 	int i = 0;
 	perInterface_wlan_t* nic[NUM_CONCURRENT_IFC];
-	#define CLOSE_TIMEOUT 12*1000
+	#define CLOSE_TIMEOUT 5*1000
 
 	if( (g_linux_wlan != NULL)  &&( ((g_linux_wlan->strInterfaceInfo[0].wilc_netdev) != NULL)
 		|| ((g_linux_wlan->strInterfaceInfo[1].wilc_netdev) != NULL)))

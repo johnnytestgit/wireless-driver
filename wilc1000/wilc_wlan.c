@@ -20,9 +20,6 @@ extern unsigned int int_clrd;
 extern wilc_hif_func_t hif_sdio;
 extern wilc_hif_func_t hif_spi;
 extern wilc_cfg_func_t mac_cfg;
-#if defined(PLAT_RK3026_TCHIP)
-extern WILC_Uint8 g_wilc_initialized; //AMR : 0422 RK3026 Crash issue
-#endif
 extern void WILC_WFI_mgmt_rx(uint8_t *buff, uint32_t size);
 extern void frmw_to_linux(uint8_t *buff, uint32_t size);
 int sdio_xfer_cnt(void);
@@ -108,8 +105,13 @@ typedef struct {
 
 static wilc_wlan_dev_t g_wlan;
 
-INLINE void chip_allow_sleep(void);
+void chip_allow_sleep(void);
+#ifdef WILC_OPTIMIZE_SLEEP_INT
+void chip_wakeup(void);
+#else
 INLINE void chip_wakeup(void);
+
+#endif
 /********************************************
 
 	Debug
@@ -774,7 +776,7 @@ static struct rxq_entry_t *wilc_wlan_rxq_remove(void)
 
 #ifdef WILC_OPTIMIZE_SLEEP_INT
 
-INLINE void chip_allow_sleep(void)
+void chip_allow_sleep(void)
 {
 	uint32_t reg=0;
 
@@ -782,24 +784,25 @@ INLINE void chip_allow_sleep(void)
 	g_wlan.hif_func.hif_read_reg(0xf0, &reg);
 
 	g_wlan.hif_func.hif_write_reg(0xf0, reg & ~(1 << 0));
+	g_wlan.hif_func.hif_write_reg(0xfa,0);
 }
 
-INLINE void chip_wakeup(void)
+void chip_wakeup(void)
 {
-	uint32_t reg, clk_status_reg, trials=0;
+	uint32_t reg, clk_status_reg, trials=0; 
 	uint32_t sleep_time;
-
-	if ((g_wlan.io_func.io_type & 0x1) == HIF_SPI)
+	
+	if ((g_wlan.io_func.io_type & 0x1) == HIF_SPI) 
 	{
 		do
 		{
 			g_wlan.hif_func.hif_read_reg(1, &reg);
 			/* Set bit 1 */
 			g_wlan.hif_func.hif_write_reg(1, reg | (1 << 1));
-
+			
 			/* Clear bit 1*/
 			g_wlan.hif_func.hif_write_reg(1, reg & ~(1 << 1));
-
+			
 			do
 			{
 				/* Wait for the chip to stabilize*/
@@ -816,6 +819,8 @@ INLINE void chip_wakeup(void)
 	}
 	else if ((g_wlan.io_func.io_type & 0x1) == HIF_SDIO)
 	{
+		g_wlan.hif_func.hif_write_reg(0xfa,1);
+		udelay(200);
 		g_wlan.hif_func.hif_read_reg(0xf0, &reg);
 		do
 		{
@@ -854,11 +859,7 @@ INLINE void chip_wakeup(void)
 
 	if(genuChipPSstate == CHIP_SLEEPING_MANUAL)
 	{
-		g_wlan.hif_func.hif_read_reg(0x1C0C, &reg);
-		reg &= ~(1<<0);
-		g_wlan.hif_func.hif_write_reg(0x1C0C, reg);
-
-		if(wilc_get_chipid(WILC_FALSE) >= 0x1002b0)
+		if(wilc_get_chipid(WILC_FALSE) < 0x1002b0)
 		{
 			/* Enable PALDO back right after wakeup */
 			uint32_t val32;
@@ -917,12 +918,9 @@ INLINE void chip_wakeup(void)
 	}while(wilc_get_chipid(WILC_TRUE) == 0);
 
 	if(genuChipPSstate == CHIP_SLEEPING_MANUAL)
-		{
-			g_wlan.hif_func.hif_read_reg(0x1C0C, &reg);
-			reg &= ~(1<<0);
-			g_wlan.hif_func.hif_write_reg(0x1C0C, reg);
+		{		
 
-			if(wilc_get_chipid(WILC_FALSE) >= 0x1002b0)
+			if(wilc_get_chipid(WILC_FALSE) < 0x1002b0)
 			{
 				/* Enable PALDO back right after wakeup */
 				uint32_t val32;
@@ -961,6 +959,19 @@ void chip_sleep_manually(WILC_Uint32 u32SleepTime)
 
 }
 
+void host_wakeup_notify()
+{
+	acquire_bus(ACQUIRE_ONLY);
+	g_wlan.hif_func.hif_write_reg(0x10b0, 1);
+	release_bus(RELEASE_ONLY);
+}
+
+void host_sleep_notify()
+{
+	acquire_bus(ACQUIRE_ONLY);
+	g_wlan.hif_func.hif_write_reg(0x10ac, 1);
+	release_bus(RELEASE_ONLY);
+}
 
 /********************************************
 
@@ -1092,9 +1103,9 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 					wait for vmm table is ready
 				**/
 				PRINT_WRN(GENERIC_DBG, "[wilc txq]: warn, vmm table not clear yet, wait... \n");
-				release_bus(RELEASE_ALLOW_SLEEP);
-				p->os_func.os_sleep(3);	/* wait 3 ms */
-				acquire_bus(ACQUIRE_AND_WAKEUP);
+				//release_bus(RELEASE_ALLOW_SLEEP);
+				//p->os_func.os_sleep(3);	/* wait 3 ms */
+				//acquire_bus(ACQUIRE_AND_WAKEUP);
 			}
 		} while (!p->quit);
 
@@ -1143,9 +1154,9 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 					break;
 				} else{
 					release_bus(RELEASE_ALLOW_SLEEP);
-					p->os_func.os_sleep(3);	/* wait 3 ms */
-					acquire_bus(ACQUIRE_AND_WAKEUP);
-					PRINT_WRN(GENERIC_DBG, "Can't get VMM entery - reg = %2x\n",reg);
+					//p->os_func.os_sleep(3);	/* wait 3 ms */
+					//acquire_bus(ACQUIRE_AND_WAKEUP);
+					//PRINT_WRN(GENERIC_DBG, "Can't get VMM entery - reg = %2x\n",reg);
 				}
 			} while (--timeout);
 			if(timeout <= 0)
@@ -1760,6 +1771,10 @@ static int wilc_wlan_start(void)
 	reg |= WILC_HAVE_EXT_PA_INV_TX_RX;
 #endif
 
+#ifdef HAS_SUSPEND_RESUME
+		reg |= WILC_HAVE_USE_IRQ_AS_HOST_WAKE;
+#endif
+
 	reg |= WILC_HAVE_LEGACY_RF_SETTINGS;
 
 
@@ -2138,12 +2153,8 @@ uint32_t init_chip(void)
 	uint32_t chipid;
 	uint32_t reg,ret=0;
 
-#if defined(PLAT_RK3026_TCHIP)
-	acquire_bus(ACQUIRE_AND_WAKEUP); //AMR : 0422 RK3026 Crash issue
-#else
-	acquire_bus(ACQUIRE_ONLY);
-#endif
 
+	acquire_bus(ACQUIRE_ONLY);
 	chipid = wilc_get_chipid(WILC_TRUE);
 
 
@@ -2304,13 +2315,7 @@ int wilc_wlan_init(wilc_wlan_inp_t *inp, wilc_wlan_oup_t *oup)
 	/***
 		host interface init
 	**/
-#if defined(PLAT_RK3026_TCHIP) //AMR : 0422 RK3026 Crash issue
-	if(!g_wilc_initialized)
-	{
-		custom_lock_bus(g_mac_open);
-		custom_wakeup(g_mac_open);
-	}
-#endif
+	
 
 	if ((inp->io_func.io_type & 0x1) == HIF_SDIO) {
 		if (!hif_sdio.hif_init(inp, wilc_debug)) {
@@ -2426,12 +2431,6 @@ int wilc_wlan_init(wilc_wlan_inp_t *inp, wilc_wlan_oup_t *oup)
 #ifdef	TCP_ACK_FILTER
  	Init_TCP_tracking();
 #endif
-
-#if defined(PLAT_RK3026_TCHIP) //AMR : 0422 RK3026 Crash issue
-	if(!g_wilc_initialized)
-		custom_unlock_bus(g_mac_open);
-#endif
-
 	return 1;
 
 _fail_:
@@ -2452,12 +2451,7 @@ _fail_:
 		g_wlan.tx_buffer = WILC_NULL;
 	}
 #endif
-
-#if defined(PLAT_RK3026_TCHIP) //AMR : 0422 RK3026 Crash issue
-	if(!g_wilc_initialized)
-		custom_unlock_bus(g_mac_open);
-#endif
-
+	
 	return ret;
 
 }

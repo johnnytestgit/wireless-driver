@@ -4406,7 +4406,27 @@ int WILC_WFI_del_virt_intf(struct wiphy *wiphy,struct net_device *dev)
 		return WILC_SUCCESS;
 }
 
+uint8_t u8SuspendOnEvent = 0;
+int WILC_WFI_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
+{
+	printk("CFG suspend [%x]\n",wow);
+	/*TODO:Cancel any ongoing connection or scan*/
+	if(wow != NULL && linux_wlan_get_num_conn_ifcs())
+		u8SuspendOnEvent = 1;
+	else
+		u8SuspendOnEvent = 0;
+	return 0;
+}
+int WILC_WFI_resume(struct wiphy *wiphy)
+{
+	printk("CFG TESUME\n");
+	return 0;
+}
 
+void	WILC_WFI_wake_up(struct wiphy *wiphy, bool enabled)
+{
+	printk("Set wake up = %d\n",enabled);
+}
 
 #endif /*WILC_AP_EXTERNAL_MLME*/
 static struct cfg80211_ops WILC_WFI_cfg80211_ops = {
@@ -4482,6 +4502,11 @@ static struct cfg80211_ops WILC_WFI_cfg80211_ops = {
 	//.mgmt_tx_cancel_wait = WILC_WFI_mgmt_tx_cancel_wait,
 	.set_power_mgmt = WILC_WFI_set_power_mgmt,
 	.set_cqm_rssi_config = WILC_WFI_set_cqm_rssi_config,
+#endif
+	.suspend = WILC_WFI_suspend,
+	.resume = WILC_WFI_resume,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
+	.set_wakeup = WILC_WFI_wake_up,
 #endif
 
 };
@@ -4645,6 +4670,9 @@ struct wireless_dev* WILC_WFI_WiphyRegister(struct net_device *net)
 
 	/*Maximum number of probed ssid to be added by user for the scan request*/
 	wdev->wiphy->max_scan_ssids = MAX_NUM_PROBED_SSID;
+	#if LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
+	wdev->wiphy->wowlan.flags = WIPHY_WOWLAN_ANY;
+	#endif
 	#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32)
 	/*Maximum number of pmkids to be cashed*/
 	wdev->wiphy->max_num_pmkids = WILC_MAX_NUM_PMKIDS;

@@ -621,7 +621,6 @@ static void* host_int_ParseJoinBssParam(tstrNetworkInfo* ptstrNetworkInfo);
 #endif /*WILC_PARSE_SCAN_IN_HOST*/
 
 extern void chip_sleep_manually(WILC_Uint32 u32SleepTime);
-extern int linux_wlan_get_num_conn_ifcs(void);
 
 /**
 *  @brief Handle_SetChannel

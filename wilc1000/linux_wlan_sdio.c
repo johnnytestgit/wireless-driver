@@ -86,7 +86,7 @@ int linux_sdio_cmd52(sdio_cmd52_t *cmd){
 
 
  int linux_sdio_cmd53(sdio_cmd53_t *cmd){
-	struct sdio_func *func = g_linux_wlan->wilc_sdio_func;
+	struct sdio_func *func = local_sdio_func;
 	int size, ret;
 
 	sdio_claim_host(func);
@@ -146,12 +146,69 @@ static void linux_sdio_remove(struct sdio_func *func)
 	**/
 	
 }
+#if defined(HAS_SUSPEND_RESUME)&& defined(WILC_OPTIMIZE_SLEEP_INT)
+int sdio_init(wilc_wlan_inp_t *inp, wilc_debug_func func);
+int sdio_reset(void *pv);
+void chip_sleep_manually(WILC_Uint32 u32SleepTime);
+void chip_wakeup(void);
+void host_wakeup_notify();
+void host_sleep_notify();
+void chip_allow_sleep(void);
 
+extern uint8_t u8SuspendOnEvent;
+static int wilc_sdio_suspend(struct device *dev)
+{
+	printk("\n\n << SUSPEND >>\n\n");
+	chip_wakeup();
+	/*if there is no events , put the chip in low power mode */
+	if(u8SuspendOnEvent == 0)
+		chip_sleep_manually(0xffffffff);
+	else
+	{
+	/*notify the chip that host will sleep*/
+		host_sleep_notify();
+		chip_allow_sleep();
+	}
+	/*reset SDIO to allow kerenl reintilaization at wake up*/
+	sdio_reset(NULL);
+	/*claim the host to prevent driver SDIO access before resume is called*/
+	sdio_claim_host(local_sdio_func);
+	return 0 ;
+}
+
+static int wilc_sdio_resume(struct device *dev)
+{
+	sdio_release_host(local_sdio_func);
+	/*wake the chip to compelete the re-intialization*/
+	chip_wakeup();
+	printk("\n\n << RESUME >>\n\n");
+	/*Init SDIO block mode*/
+	sdio_init(NULL,NULL);
+	/*if there is an event , notify the chip that the host is awake now*/
+	if(u8SuspendOnEvent == 1)
+		host_wakeup_notify();
+
+	chip_allow_sleep();
+    return 0;
+
+}
+#endif
+#if defined(HAS_SUSPEND_RESUME)&& defined(WILC_OPTIMIZE_SLEEP_INT)
+static const struct dev_pm_ops wilc_sdio_pm_ops = {	
+     .suspend 	= wilc_sdio_suspend,    
+     .resume    = wilc_sdio_resume,     
+     };
+#endif
 struct sdio_driver wilc_bus = {
 	.name		= SDIO_MODALIAS,
 	.id_table	= wilc_sdio_ids,
 	.probe		= linux_sdio_probe,
 	.remove		= linux_sdio_remove,
+#if defined(HAS_SUSPEND_RESUME)&& defined(WILC_OPTIMIZE_SLEEP_INT)
+    .drv      = {
+                  .pm = &wilc_sdio_pm_ops,
+               }
+#endif
 };
 
 int enable_sdio_interrupt(void){
@@ -165,7 +222,7 @@ int enable_sdio_interrupt(void){
 	if (ret < 0) {
 		PRINT_ER("can't claim sdio_irq, err(%d)\n", ret);
 		ret = -EIO;
-	}
+	}	
 #endif
 	return ret;
 }

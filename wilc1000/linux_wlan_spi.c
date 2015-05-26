@@ -110,10 +110,6 @@ int linux_spi_init(void* vp){
 	return ret;
 }
 
-#if defined(PLAT_WMS8304)
-#define TXRX_PHASE_SIZE (4096)
-#endif
-
 #if defined (NM73131_0_BOARD)
 
 int linux_spi_write(uint8_t* b, uint32_t len){	
@@ -150,101 +146,6 @@ int linux_spi_write(uint8_t* b, uint32_t len){
 	return ret;
 }
 
-#elif defined(TXRX_PHASE_SIZE)
-
-int linux_spi_write(uint8_t* b, uint32_t len){	
-	int ret;
-	if(len > 0 && b != NULL) {
-		int i = 0;
-		int blk = len/TXRX_PHASE_SIZE;
-		int remainder = len%TXRX_PHASE_SIZE;
-
-		char *r_buffer = (char*) kzalloc(TXRX_PHASE_SIZE, GFP_KERNEL);
-		if(! r_buffer){
-			PRINT_ER("Failed to allocate memory for r_buffer\n");
-		}
-
-		if(blk)
-		{
-			while(i<blk)
-			{
-				struct spi_message msg;
-				struct spi_transfer tr = {
-					.tx_buf = b + (i*TXRX_PHASE_SIZE),
-					//.rx_buf = NULL,
-					.len = TXRX_PHASE_SIZE,
-					.speed_hz = SPEED,
-					.bits_per_word = 8,
-					.delay_usecs = 0,
-				};
-				/*
-				char *r_buffer = (char*) kzalloc(TXRX_PHASE_SIZE, GFP_KERNEL);
-				if(! r_buffer){
-					PRINT_ER("Failed to allocate memory for r_buffer\n");
-				}
-				*/
-				tr.rx_buf = r_buffer;
-				
-				memset(&msg, 0, sizeof(msg));
-				spi_message_init(&msg);
-				msg.spi = wilc_spi_dev;
-				msg.is_dma_mapped = USE_SPI_DMA;
-
-				spi_message_add_tail(&tr, &msg);
-				ret = spi_sync(wilc_spi_dev, &msg);
-				if(ret < 0) {
-					PRINT_ER( "SPI transaction failed\n");
-				}
-				//i += MJ_WRITE_SIZE;
-				i++;
-				
-			}
-		}
-		if(remainder)
-		{
-			struct spi_message msg;
-			struct spi_transfer tr = {
-				.tx_buf = b + (blk*TXRX_PHASE_SIZE),
-				//.rx_buf = NULL,
-				.len = remainder,
-				.speed_hz = SPEED,
-				.bits_per_word = 8,
-				.delay_usecs = 0,
-			};
-			/*
-			char *r_buffer = (char*) kzalloc(remainder, GFP_KERNEL);
-			if(! r_buffer){
-				PRINT_ER("Failed to allocate memory for r_buffer\n");
-			}
-			*/
-			tr.rx_buf = r_buffer;
-
-			memset(&msg, 0, sizeof(msg));
-			spi_message_init(&msg);
-			msg.spi = wilc_spi_dev;
-			msg.is_dma_mapped = USE_SPI_DMA;				// rachel
-
-			spi_message_add_tail(&tr, &msg);
-			ret = spi_sync(wilc_spi_dev, &msg);
-			if(ret < 0) {
-				PRINT_ER( "SPI transaction failed\n");
-			}
-		}
-		if(r_buffer)
-			kfree(r_buffer);
-	} else {
-		PRINT_ER("can't write data with the following length: %d\n",len);
-		PRINT_ER("FAILED due to NULL buffer or ZERO length check the following length: %d\n",len);
-		ret = -1;
-	}
-	
-	/* change return value to match WILC interface */
-	(ret<0)? (ret = 0):(ret = 1);
-
-	return ret;
-
-}
-
 #else
 int linux_spi_write(uint8_t* b, uint32_t len){	
 
@@ -268,10 +169,6 @@ int linux_spi_write(uint8_t* b, uint32_t len){
 		
 		memset(&msg, 0, sizeof(msg));
 		spi_message_init(&msg);
-//[[johnny add
-		msg.spi = wilc_spi_dev;
-		msg.is_dma_mapped = USE_SPI_DMA;
-//]]
 		spi_message_add_tail(&tr,&msg);
 		
 		ret = spi_sync(wilc_spi_dev,&msg);
@@ -326,94 +223,6 @@ int linux_spi_read(unsigned char*rb, unsigned long rlen){
 
 	return ret;
 }
-
-#elif defined(TXRX_PHASE_SIZE)
-
-int linux_spi_read(unsigned char*rb, unsigned long rlen){
-	int ret;
-
-	if(rlen > 0) {
-		int i =0;
-
-		int blk = rlen/TXRX_PHASE_SIZE;
-		int remainder = rlen%TXRX_PHASE_SIZE;
-
-		char *t_buffer = (char*) kzalloc(TXRX_PHASE_SIZE, GFP_KERNEL);
-		if(! t_buffer){
-			PRINT_ER("Failed to allocate memory for t_buffer\n");
-		}
-
-		if(blk)
-		{
-			while(i<blk)
-			{
-				struct spi_message msg;
-				struct spi_transfer tr = {
-					//.tx_buf = NULL,
-					.rx_buf = rb + (i*TXRX_PHASE_SIZE),
-					.len = TXRX_PHASE_SIZE,
-					.speed_hz = SPEED,
-					.bits_per_word = 8,
-					.delay_usecs = 0,
-				};
-				tr.tx_buf = t_buffer;
-				
-				memset(&msg, 0, sizeof(msg));
-				spi_message_init(&msg);
-				msg.spi = wilc_spi_dev;
-				msg.is_dma_mapped = USE_SPI_DMA;
-
-				spi_message_add_tail(&tr, &msg);
-				ret = spi_sync(wilc_spi_dev, &msg);
-				if(ret < 0) {
-					PRINT_ER( "SPI transaction failed\n");
-				}
-				i ++;
-			}
-		}
-		if(remainder)
-		{
-			struct spi_message msg;
-			struct spi_transfer tr = {
-				//.tx_buf = NULL,
-				.rx_buf = rb + (blk*TXRX_PHASE_SIZE),
-				.len = remainder,
-				.speed_hz = SPEED,
-				.bits_per_word = 8,
-				.delay_usecs = 0,
-			};
-			/*
-			char *t_buffer = (char*) kzalloc(remainder, GFP_KERNEL);
-			if(! t_buffer){
-				PRINT_ER("Failed to allocate memory for t_buffer\n");
-			}
-			*/
-			tr.tx_buf = t_buffer;
-
-			memset(&msg, 0, sizeof(msg));
-			spi_message_init(&msg);
-			msg.spi = wilc_spi_dev;
-			msg.is_dma_mapped = USE_SPI_DMA;				// rachel
-
-			spi_message_add_tail(&tr, &msg);
-			ret = spi_sync(wilc_spi_dev, &msg);
-			if(ret < 0) {
-				PRINT_ER( "SPI transaction failed\n");
-			}
-		}
-
-		if(t_buffer)
-			kfree(t_buffer);
-	}else {
-		PRINT_ER("can't read data with the following length: %ld\n",rlen);
-		ret = -1;
-	}
-	/* change return value to match WILC interface */
-	(ret<0)? (ret = 0):(ret = 1);
-
-	return ret;
-}
-
 #else
 int linux_spi_read(unsigned char*rb, unsigned long rlen){
 

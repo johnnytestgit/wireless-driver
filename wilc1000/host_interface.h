@@ -1366,6 +1366,7 @@ static int host_int_addBASession(WILC_WFIDrvHandle hWFIDrv, char* pBSSID,char TI
 void host_int_freeJoinParams(void* pJoinParams);
 
 WILC_Sint32 host_int_get_statistics(WILC_WFIDrvHandle hWFIDrv, tstrStatistics* pstrStatistics);
+extern int linux_wlan_get_num_conn_ifcs(void);
 
 /*****************************************************************************/
 /*																			 */

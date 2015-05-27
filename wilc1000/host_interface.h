@@ -358,6 +358,7 @@ typedef struct
 typedef struct
 {
 	WILC_Uint32	u32Address;
+	WILC_Uint8	u8MacIndex;
 }tstrHostIfSetDrvHandler;
 
 typedef struct
@@ -1354,7 +1355,7 @@ WILC_Sint32 host_int_frame_register(WILC_WFIDrvHandle hWFIDrv, WILC_Uint16 u16Fr
 *  @date	
 *  @version	1.0
 */
-WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address);
+WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address,WILC_Uint8 u8MacIndex);
 WILC_Sint32 host_int_set_operation_mode(WILC_WFIDrvHandle hWFIDrv, WILC_Uint32 u32mode);
 
 static WILC_Sint32 Handle_ScanDone(void* drvHandler,tenuScanEvent enuEvent);

@@ -870,7 +870,7 @@ void chip_wakeup(void)
 			g_wlan.hif_func.hif_read_reg(0x1e9c, &val32);
 			val32 |= (1 << 6);
 			g_wlan.hif_func.hif_write_reg(0x1e9c, val32);
-		}
+		}	
 	}
 	genuChipPSstate = CHIP_WAKEDUP;
 }

@@ -589,7 +589,7 @@ int WILC_WFI_Set_PMKSA(WILC_Uint8 * bssid,struct WILC_WFI_priv* priv)
 
 
 }
-int linux_wlan_set_bssid(struct net_device * wilc_netdev,uint8_t * pBSSID);
+int linux_wlan_set_bssid(struct net_device * wilc_netdev,uint8_t * pBSSID,uint8_t mode);
 
 
 /**
@@ -643,7 +643,7 @@ static void CfgConnectResult(tenuConnDisconnEvent enuConnDisconnEvent,
 			/* The case here is that our station was waiting for association response frame and has just received it containing status code
 			    = SUCCESSFUL_STATUSCODE, while mac status is MAC_DISCONNECTED (which means something wrong happened) */
 			u16ConnectStatus = WLAN_STATUS_UNSPECIFIED_FAILURE;
-			linux_wlan_set_bssid(priv->dev,NullBssid);
+			linux_wlan_set_bssid(priv->dev,NullBssid,STATION_MODE);
 			WILC_memset(u8ConnectedSSID,0,ETH_ALEN);
 
 			/*BugID_5457*/
@@ -666,7 +666,7 @@ static void CfgConnectResult(tenuConnDisconnEvent enuConnDisconnEvent,
 			WILC_memcpy(priv->au8AssociatedBss, pstrConnectInfo->au8bssid, ETH_ALEN);
 
 			//set bssid in frame filter
-			//linux_wlan_set_bssid(dev,pstrConnectInfo->au8bssid);
+			//linux_wlan_set_bssid(dev,pstrConnectInfo->au8bssid,STATION_MODE);
 
 			/* BugID_4209: if this network has expired in the scan results in the above nl80211 layer, refresh them here by calling
 			    cfg80211_inform_bss() with the last Scan results before calling cfg80211_connect_result() to avoid
@@ -722,7 +722,7 @@ static void CfgConnectResult(tenuConnDisconnEvent enuConnDisconnEvent,
 		u8P2Precvrandom=0x00;
 		bWilc_ie = WILC_FALSE;
 		WILC_memset(priv->au8AssociatedBss, 0, ETH_ALEN);
-		linux_wlan_set_bssid(priv->dev,NullBssid);
+		linux_wlan_set_bssid(priv->dev,NullBssid,STATION_MODE);
 		WILC_memset(u8ConnectedSSID,0,ETH_ALEN);
 
 		/*BugID_5457*/
@@ -874,7 +874,7 @@ static int WILC_WFI_CfgScan(struct wiphy *wiphy,struct net_device *dev, struct c
 
 	priv->u32RcvdChCount = 0;
 
-	host_int_set_wfi_drv_handler((WILC_Uint32)priv->hWILCWFIDrv);
+
 
 
 	reset_shadow_found(priv);
@@ -982,7 +982,6 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 	priv = wiphy_priv(wiphy);
     pstrWFIDrv = (tstrWILC_WFIDrv *)(priv->hWILCWFIDrv);
 
-	host_int_set_wfi_drv_handler((WILC_Uint32)priv->hWILCWFIDrv);
 
 	//host_int_set_wfi_drv_handler((WILC_Uint32)priv->hWILCWFIDrv);
 	PRINT_D(CFG80211_DBG,"Connecting to SSID [%s] on netdev [%p] host if [%x]\n",sme->ssid,dev, (WILC_Uint32)priv->hWILCWFIDrv);
@@ -1232,7 +1231,7 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 		u8WLANChannel = pstrNetworkInfo->u8channel;
 	}
 
-	linux_wlan_set_bssid(dev,pstrNetworkInfo->au8bssid);
+	linux_wlan_set_bssid(dev,pstrNetworkInfo->au8bssid,STATION_MODE);
 
 	s32Error = host_int_set_join_req(priv->hWILCWFIDrv, pstrNetworkInfo->au8bssid, sme->ssid,
 							  	    sme->ssid_len, sme->ie, sme->ie_len,
@@ -1247,8 +1246,15 @@ static int WILC_WFI_CfgConnect(struct wiphy *wiphy, struct net_device *dev,
 	}
 
 done:
-
+	if(s32Error != WILC_SUCCESS)
+	{
+		PRINT_ER("%s(): Error(%d) \n",__FUNCTION__,s32Error);
+		s32Error = -ENOENT;
+		connecting = 0;
+	}
+	
 	return s32Error;
+
 }
 
 
@@ -1279,7 +1285,7 @@ static int WILC_WFI_disconnect(struct wiphy *wiphy, struct net_device *dev,u16 r
 	if(!pstrWFIDrv->u8P2PConnect)
 		u8WLANChannel = INVALID_CHANNEL;
 	#endif
-	linux_wlan_set_bssid(priv->dev,NullBssid);
+	linux_wlan_set_bssid(priv->dev,NullBssid,STATION_MODE);
 
 	PRINT_D(CFG80211_DBG,"Disconnecting with reason code(%d)\n", reason_code);
 
@@ -1739,8 +1745,6 @@ static int WILC_WFI_del_key(struct wiphy *wiphy, struct net_device *netdev,
 				g_key_gtk_params.seq = NULL;
 			}
 
-			/*Reset WILC_CHANGING_VIR_IF register to allow adding futrue keys to CE H/W*/
-			Set_machw_change_vir_if(WILC_FALSE);
 		}
 
 		if(key_index >= 0 && key_index <=3)
@@ -3438,392 +3442,87 @@ static int WILC_WFI_change_virt_intf(struct wiphy *wiphy,struct net_device *dev,
 	g_obtainingIP=WILC_FALSE;
 	WILC_TimerStop(&hDuringIpTimer, WILC_NULL);
 	PRINT_D(GENERIC_DBG,"Changing virtual interface, enable scan\n");
-	#endif
-	/*BugID_5137*/
-	/*Set WILC_CHANGING_VIR_IF register to disallow adding futrue keys to CE H/W*/
-	if(g_ptk_keys_saved && g_gtk_keys_saved)
-	{
-		Set_machw_change_vir_if(WILC_TRUE);
-	}
-
+	#endif	
 	switch(type)
 	{
+	
 	case NL80211_IFTYPE_STATION:
-		connecting = 0;
-		PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_STATION\n");
-		//linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-
-		//send delba over wlan interface
-
-
-		dev->ieee80211_ptr->iftype = type;
-		priv->wdev->iftype = type;
-		nic->monitor_flag = 0;
-		nic->iftype = STATION_MODE;
-
-		/*Remove the enteries of the previously connected clients*/
-		memset(priv->assoc_stainfo.au8Sta_AssociatedBss, 0, MAX_NUM_STA * ETH_ALEN);
-		#ifndef SIMULATION
-		#ifdef WILC_P2P
-		interface_type = nic->iftype;
-		nic->iftype = STATION_MODE;
-
-		if(g_linux_wlan->wilc1000_initialized)
-		{
-			host_int_del_All_Rx_BASession(priv->hWILCWFIDrv, g_linux_wlan->strInterfaceInfo[0].aBSSID, TID);
-			// ensure that the message Q is empty
-			host_int_wait_msg_queue_idle();
-
-			/*BugID_5213*/
-			/*Eliminate host interface blocking state*/
-			linux_wlan_unlock((void *)&g_linux_wlan->cfg_event);
-
-			wilc1000_wlan_deinit(g_linux_wlan);
-			wilc1000_wlan_init(dev, nic);
-			g_wilc_initialized = 1;
-			nic->iftype = interface_type;
-
-			/*Setting interface 1 drv handler and mac address in newly downloaded FW*/
-			host_int_set_wfi_drv_handler(g_linux_wlan->strInterfaceInfo[0].drvHandler);
-			host_int_set_MacAddress((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-									g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
+			connecting = 0;
+			PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_STATION\n");
+		
+			dev->ieee80211_ptr->iftype = type;
+			priv->wdev->iftype = type;
+			nic->monitor_flag = 0;
+			nic->iftype = STATION_MODE;
+	
 			host_int_set_operation_mode(priv->hWILCWFIDrv,STATION_MODE);
-
-			/*Add saved WEP keys, if any*/
-			if(g_wep_keys_saved)
-			{
-				host_int_set_WEPDefaultKeyID((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-											g_key_wep_params.key_idx);
-				host_int_add_wep_key_bss_sta((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-											g_key_wep_params.key,
-											g_key_wep_params.key_len,
-											g_key_wep_params.key_idx);
-			}
-
-			/*No matter the driver handler passed here, it will be overwriiten*/
-			/*in Handle_FlushConnect() with gu8FlushedJoinReqDrvHandler*/
-			host_int_flush_join_req(priv->hWILCWFIDrv);
-
-			/*Add saved PTK and GTK keys, if any*/
-			if(g_ptk_keys_saved && g_gtk_keys_saved)
-			{
-				PRINT_D(CFG80211_DBG,"ptk %x %x %x\n",g_key_ptk_params.key[0],
-											g_key_ptk_params.key[1],
-											g_key_ptk_params.key[2]);
-				PRINT_D(CFG80211_DBG,"gtk %x %x %x\n",g_key_gtk_params.key[0],
-											g_key_gtk_params.key[1],
-											g_key_gtk_params.key[2]);
-				WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-									g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-									g_add_ptk_key_params.key_idx,
-									#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-									g_add_ptk_key_params.pairwise,
-									#endif
-									g_add_ptk_key_params.mac_addr,
-									(struct key_params *)(&g_key_ptk_params));
-
-				WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-									g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-									g_add_gtk_key_params.key_idx,
-									#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-									g_add_gtk_key_params.pairwise,
-									#endif
-									g_add_gtk_key_params.mac_addr,
-									(struct key_params *)(&g_key_gtk_params));
-			}
-
-			/*BugID_4847: registered frames in firmware are now*/
-			/*lost due to mac close. So re-register those frames*/
-			if(g_linux_wlan->wilc1000_initialized)
-			{
-				for(i=0; i<num_reg_frame; i++)
-				{
-					PRINT_D(INIT_DBG,"Frame registering Type: %x - Reg: %d\n", nic->g_struct_frame_reg[i].frame_type,
-																			nic->g_struct_frame_reg[i].reg);
-					host_int_frame_register(priv->hWILCWFIDrv,
-											nic->g_struct_frame_reg[i].frame_type,
-											nic->g_struct_frame_reg[i].reg);
-				}
-			}
-
+	
+			/*Remove the enteries of the previously connected clients*/
+			memset(priv->assoc_stainfo.au8Sta_AssociatedBss, 0, MAX_NUM_STA * ETH_ALEN);
+	
 			bEnablePS = WILC_TRUE;
 			host_int_set_power_mgmt( priv->hWILCWFIDrv, 1, 0);
-		}
-		#endif
-		#endif
-		break;
-
-	case NL80211_IFTYPE_P2P_CLIENT:
-		bEnablePS = WILC_FALSE;
-		host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
-		connecting = 0;
-		PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_P2P_CLIENT\n");
-		//linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-
-		host_int_del_All_Rx_BASession(priv->hWILCWFIDrv, g_linux_wlan->strInterfaceInfo[0].aBSSID, TID);
-
-		dev->ieee80211_ptr->iftype = type;
-		priv->wdev->iftype = type;
-		nic->monitor_flag = 0;
-
-		#ifndef SIMULATION
-		#ifdef WILC_P2P
-
-		PRINT_D(HOSTAPD_DBG,"Downloading P2P_CONCURRENCY_FIRMWARE\n");
-		nic->iftype = CLIENT_MODE;
-
-
-		if(g_linux_wlan->wilc1000_initialized)
-		{
-			// ensure that the message Q is empty
-			host_int_wait_msg_queue_idle();
-
-			wilc1000_wlan_deinit(g_linux_wlan);
-			wilc1000_wlan_init(dev, nic);
-			g_wilc_initialized = 1;
-
-			host_int_set_wfi_drv_handler(g_linux_wlan->strInterfaceInfo[0].drvHandler);
-			host_int_set_MacAddress((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-									g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
+	
+			break;
+			
+		case NL80211_IFTYPE_P2P_CLIENT:
+			connecting = 0;
+			PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_P2P_CLIENT\n");
+			
 			host_int_set_operation_mode(priv->hWILCWFIDrv,STATION_MODE);
+				
+			dev->ieee80211_ptr->iftype = type;
+			priv->wdev->iftype = type;
+			nic->monitor_flag = 0;
+			nic->iftype = CLIENT_MODE;
+	
+			bEnablePS = WILC_FALSE;
+			host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
+			break;
+	
+		case NL80211_IFTYPE_AP:
+		
 
-			/*Add saved WEP keys, if any*/
-			if(g_wep_keys_saved)
-			{
-				host_int_set_WEPDefaultKeyID((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-											g_key_wep_params.key_idx);
-				host_int_add_wep_key_bss_sta((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-											g_key_wep_params.key,
-											g_key_wep_params.key_len,
-											g_key_wep_params.key_idx);
-			}
-
-			/*No matter the driver handler passed here, it will be overwriiten*/
-			/*in Handle_FlushConnect() with gu8FlushedJoinReqDrvHandler*/
-			host_int_flush_join_req(priv->hWILCWFIDrv);
-
-			/*Add saved PTK and GTK keys, if any*/
-			if(g_ptk_keys_saved && g_gtk_keys_saved)
-			{
-				PRINT_D(CFG80211_DBG,"ptk %x %x %x\n",g_key_ptk_params.key[0],
-											g_key_ptk_params.key[1],
-											g_key_ptk_params.key[2]);
-				PRINT_D(CFG80211_DBG,"gtk %x %x %x\n",g_key_gtk_params.key[0],
-											g_key_gtk_params.key[1],
-											g_key_gtk_params.key[2]);
-				WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-									g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-									g_add_ptk_key_params.key_idx,
-									#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-									g_add_ptk_key_params.pairwise,
-									#endif
-									g_add_ptk_key_params.mac_addr,
-									(struct key_params *)(&g_key_ptk_params));
-
-				WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-									g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-									g_add_gtk_key_params.key_idx,
-									#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-									g_add_gtk_key_params.pairwise,
-									#endif
-									g_add_gtk_key_params.mac_addr,
-									(struct key_params *)(&g_key_gtk_params));
-			}
-
-			/*Refresh scan, to refresh the scan results to the wpa_supplicant. Set MachHw to false to enable further key installments*/
-		    refresh_scan(priv,1,WILC_TRUE);
-		    Set_machw_change_vir_if(WILC_FALSE);
-
-			/*BugID_4847: registered frames in firmware are now lost
-			    due to mac close. So re-register those frames */
-			if(g_linux_wlan->wilc1000_initialized)
-			{
-				for(i=0; i<num_reg_frame; i++)
-				{
-					PRINT_D(INIT_DBG,"Frame registering Type: %x - Reg: %d\n", nic->g_struct_frame_reg[i].frame_type,
-																			nic->g_struct_frame_reg[i].reg);
-					host_int_frame_register(priv->hWILCWFIDrv,
-											nic->g_struct_frame_reg[i].frame_type,
-											nic->g_struct_frame_reg[i].reg);
-				}
-			}
-		}
-		#endif
-		#endif
-		break;
-
-	case NL80211_IFTYPE_AP:
-		//connecting = 1;
-		bEnablePS = WILC_FALSE;
-		PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_AP %d\n", type);
-		//linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-		//mon_priv = netdev_priv(dev);
-		//mon_priv->real_ndev = dev;
-		dev->ieee80211_ptr->iftype = type;
-		priv->wdev->iftype = type;
-		nic->iftype = AP_MODE;
-		PRINT_D(CORECONFIG_DBG, "(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
-
-		#ifndef SIMULATION
-		PRINT_D(HOSTAPD_DBG,"Downloading AP firmware\n");
-		linux_wlan_get_firmware(nic);
-		#ifdef WILC_P2P
-		/*If wilc is running, then close-open to actually get new firmware running (serves P2P)*/
-		if(g_linux_wlan->wilc1000_initialized)
-		{
+			
+			dev->ieee80211_ptr->iftype = type;
+			priv->wdev->iftype = type;
 			nic->iftype = AP_MODE;
-			g_linux_wlan->wilc1000_initialized = 1;
-			mac_close(dev);
-			mac_open(dev);
-
-			//wilc1000_wlan_deinit(g_linux_wlan);
-			//wilc1000_wlan_init(dev,nic);
-			//repeat_power_cycle(nic);
-			//nic->iftype = STATION_MODE;
-
-			/*BugID_4847: registered frames in firmware are now lost
-			   due to mac close. So re-register those frames */
-			for(i=0; i<num_reg_frame; i++)
-			{
-				PRINT_D(INIT_DBG,"Frame registering Type: %x - Reg: %d\n", nic->g_struct_frame_reg[i].frame_type,
-																		nic->g_struct_frame_reg[i].reg);
-				host_int_frame_register(priv->hWILCWFIDrv,
-										nic->g_struct_frame_reg[i].frame_type,
-										nic->g_struct_frame_reg[i].reg);
-			}
-		}
-		#endif
-		#endif
-		break;
-
-	case NL80211_IFTYPE_P2P_GO:
-		PRINT_D(GENERIC_DBG,"start duringIP timer\n");
-
-		#ifdef DISABLE_PWRSAVE_AND_SCAN_DURING_IP
-		g_obtainingIP=WILC_TRUE;
-		WILC_TimerStart(&hDuringIpTimer, duringIP_TIME, WILC_NULL, WILC_NULL);
-		#endif
-		host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
-		/*BugID_5222*/
-		/*Delete block ack has to be the latest config packet*/
-		/*sent before downloading new FW. This is because it blocks on*/
-		/*hWaitResponse semaphore, which allows previous config*/
-		/*packets to actually take action on old FW*/
-		host_int_del_All_Rx_BASession(priv->hWILCWFIDrv, g_linux_wlan->strInterfaceInfo[0].aBSSID, TID);
-		bEnablePS = WILC_FALSE;
-		PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_GO\n");
-		//linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-		//mon_priv = netdev_priv(dev);
-		//mon_priv->real_ndev = dev;
-		dev->ieee80211_ptr->iftype = type;
-		priv->wdev->iftype = type;
-
-		PRINT_D(CORECONFIG_DBG, "(WILC_Uint32)priv->hWILCWFIDrv[%x]\n",(WILC_Uint32)priv->hWILCWFIDrv);
-		//host_int_set_operation_mode((WILC_Uint32)priv->hWILCWFIDrv,AP_MODE);
-
-		#ifndef SIMULATION
-		#ifdef WILC_P2P
-		PRINT_D(HOSTAPD_DBG,"Downloading P2P_CONCURRENCY_FIRMWARE\n");
-
-
-		#if 1
-		nic->iftype = GO_MODE;
-
-		// ensure that the message Q is empty
-		host_int_wait_msg_queue_idle();
-
-		/*while(!g_hif_thread_idle)
-		{
-			PRINT_D(GENERIC_DBG, "Wait for host IF idle\n");
-			WILC_Sleep(10);
-		}*/
-		wilc1000_wlan_deinit(g_linux_wlan);
-		//repeat_power_cycle_partially(g_linux_wlan);
-		wilc1000_wlan_init(dev, nic);
-		g_wilc_initialized = 1;
-
-
-		/*Setting interface 1 drv handler and mac address in newly downloaded FW*/
-		host_int_set_wfi_drv_handler(g_linux_wlan->strInterfaceInfo[0].drvHandler);
-		host_int_set_MacAddress((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-								g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-		host_int_set_operation_mode(priv->hWILCWFIDrv,AP_MODE);
-
-		/*Add saved WEP keys, if any*/
-		if(g_wep_keys_saved)
-		{
-			host_int_set_WEPDefaultKeyID((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-										g_key_wep_params.key_idx);
-			host_int_add_wep_key_bss_sta((WILC_WFIDrvHandle)(g_linux_wlan->strInterfaceInfo[0].drvHandler),
-										g_key_wep_params.key,
-										g_key_wep_params.key_len,
-										g_key_wep_params.key_idx);
-		}
-
-		/*No matter the driver handler passed here, it will be overwriiten*/
-		/*in Handle_FlushConnect() with gu8FlushedJoinReqDrvHandler*/
-		host_int_flush_join_req(priv->hWILCWFIDrv);
-
-		/*Add saved PTK and GTK keys, if any*/
-		if(g_ptk_keys_saved && g_gtk_keys_saved)
-		{
-			PRINT_D(CFG80211_DBG,"ptk %x %x %x cipher %x\n",g_key_ptk_params.key[0],
-											g_key_ptk_params.key[1],
-											g_key_ptk_params.key[2],
-											g_key_ptk_params.cipher);
-			PRINT_D(CFG80211_DBG,"gtk %x %x %x cipher %x\n",g_key_gtk_params.key[0],
-											g_key_gtk_params.key[1],
-											g_key_gtk_params.key[2],
-											g_key_gtk_params.cipher);
-			#if 1
-			WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-								g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-								g_add_ptk_key_params.key_idx,
-								#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-								g_add_ptk_key_params.pairwise,
-								#endif
-								g_add_ptk_key_params.mac_addr,
-								(struct key_params *)(&g_key_ptk_params));
-
-			WILC_WFI_add_key(g_linux_wlan->strInterfaceInfo[0].wilc_netdev->ieee80211_ptr->wiphy,
-								g_linux_wlan->strInterfaceInfo[0].wilc_netdev,
-								g_add_gtk_key_params.key_idx,
-								#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
-								g_add_gtk_key_params.pairwise,
-								#endif
-								g_add_gtk_key_params.mac_addr,
-								(struct key_params *)(&g_key_gtk_params));
-			#endif
-		}
-		#endif
-
-		/*BugID_4847: registered frames in firmware are now*/
-		/*lost due to mac close. So re-register those frames*/
 		if(g_linux_wlan->wilc1000_initialized)
-		{
-			for(i=0; i<num_reg_frame; i++)
 			{
-				PRINT_D(INIT_DBG,"Frame registering Type: %x - Reg: %d\n", nic->g_struct_frame_reg[i].frame_type,
-																		nic->g_struct_frame_reg[i].reg);
-				host_int_frame_register(priv->hWILCWFIDrv,
-										nic->g_struct_frame_reg[i].frame_type,
-										nic->g_struct_frame_reg[i].reg);
+				host_int_set_wfi_drv_handler(priv->hWILCWFIDrv,0);
+				host_int_set_operation_mode(priv->hWILCWFIDrv,AP_MODE);
+				host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
 			}
+			break;
+					
+		case NL80211_IFTYPE_P2P_GO:
+			PRINT_D(HOSTAPD_DBG,"Interface type = NL80211_IFTYPE_GO\n");
+			PRINT_D(GENERIC_DBG,"start duringIP timer\n");
+	
+		#ifdef DISABLE_PWRSAVE_AND_SCAN_DURING_IP
+			g_obtainingIP=WILC_TRUE;
+			WILC_TimerStart(&hDuringIpTimer, duringIP_TIME, WILC_NULL, WILC_NULL);
+		#endif	
+
+			host_int_set_operation_mode(priv->hWILCWFIDrv,AP_MODE);	
+			dev->ieee80211_ptr->iftype = type;
+			priv->wdev->iftype = type;
+			nic->iftype = GO_MODE;
+			
+			bEnablePS = WILC_FALSE;
+			host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
+			break;
+			
+		default:
+			PRINT_ER("Unknown interface type= %d\n", type);
+			s32Error = -EINVAL;
+			return s32Error;
+			break;
 		}
-		#endif
-		#endif
-		break;
-
-	default:
-		PRINT_ER("Unknown interface type= %d\n", type);
-		s32Error = -EINVAL;
+	
 		return s32Error;
-		break;
 	}
-
-	return s32Error;
-}
-
+	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0)
 /* (austin.2013-07-23)
 
@@ -3857,8 +3556,10 @@ static int WILC_WFI_start_ap(struct wiphy *wiphy, struct net_device *dev,
 	struct cfg80211_beacon_data* beacon = &(settings->beacon);
 	struct WILC_WFI_priv* priv;
 	WILC_Sint32 s32Error = WILC_SUCCESS;
-
+	perInterface_wlan_t* nic;	
+		
 	priv = wiphy_priv(wiphy);
+	nic = netdev_priv(dev);
 	PRINT_D(HOSTAPD_DBG,"Starting ap\n");
 
 	PRINT_D(HOSTAPD_DBG,"Interval = %d \n DTIM period = %d\n Head length = %d Tail length = %d\n",
@@ -3870,9 +3571,8 @@ static int WILC_WFI_start_ap(struct wiphy *wiphy, struct net_device *dev,
 	if(s32Error != WILC_SUCCESS)
 		PRINT_ER("Error in setting channel\n");
 #endif
-
-	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
-
+	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[nic->u8IfIdx].aSrcAddress,AP_MODE);
+	
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_add_beacon(	priv->hWILCWFIDrv,
 									settings->beacon_interval,
@@ -3952,7 +3652,7 @@ static int  WILC_WFI_stop_ap(struct wiphy *wiphy, struct net_device *dev)
 	PRINT_D(HOSTAPD_DBG,"Deleting beacon\n");
 
 	/*BugID_5188*/
-	linux_wlan_set_bssid(dev, NullBssid);
+	linux_wlan_set_bssid(dev, NullBssid,AP_MODE);
 
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_del_beacon(priv->hWILCWFIDrv);
@@ -3987,15 +3687,17 @@ static int WILC_WFI_add_beacon(struct wiphy *wiphy, struct net_device *dev,
 {
 	WILC_Sint32 s32Error = WILC_SUCCESS;
 	struct WILC_WFI_priv* priv;
+	perInterface_wlan_t* nic;
 
 
 
 	priv = wiphy_priv(wiphy);
+	nic = netdev_priv(dev);
 	PRINT_D(HOSTAPD_DBG,"Adding Beacon\n");
 
 	PRINT_D(HOSTAPD_DBG,"Interval = %d \n DTIM period = %d\n Head length = %d Tail length = %d\n",info->interval , info->dtim_period,info->head_len,info->tail_len );
 
-	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[0].aSrcAddress);
+	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[nic->u8IfIdx].aSrcAddress,AP_MODE);
 
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_add_beacon(priv->hWILCWFIDrv, info->interval,
@@ -4060,7 +3762,7 @@ static int  WILC_WFI_del_beacon(struct wiphy *wiphy, struct net_device *dev)
 	PRINT_D(HOSTAPD_DBG,"Deleting beacon\n");
 
 	/*BugID_5188*/
-	linux_wlan_set_bssid(dev, NullBssid);
+	linux_wlan_set_bssid(dev, NullBssid,AP_MODE);
 
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_del_beacon(priv->hWILCWFIDrv);

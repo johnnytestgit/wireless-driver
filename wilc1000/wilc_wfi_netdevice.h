@@ -99,7 +99,7 @@ struct WILC_WFI_stats
 #elif defined (PANDA_BOARD)
  #define RX_BH_TYPE  RX_BH_THREADED_IRQ
 #else 
- #define RX_BH_TYPE  RX_BH_KTHREAD
+ #define RX_BH_TYPE  RX_BH_THREADED_IRQ
 #endif
 
 struct wilc_wfi_key {
@@ -199,6 +199,7 @@ typedef struct{
 uint8_t aSrcAddress[ETH_ALEN];
 uint8_t aBSSID[ETH_ALEN];
 uint32_t drvHandler;
+uint8_t u8IfcType;
 struct net_device* wilc_netdev;
 }tstrInterfaceInfo;
 typedef struct{

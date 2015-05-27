@@ -7,9 +7,9 @@ ccflags-$(CONFIG_WILC1000_SDIO) += -DWILC_SDIO -DCOMPLEMENT_BOOT -DWILC_OPTIMIZE
 ccflags-$(CONFIG_WILC1000_HW_OOB_INTR) += -DWILC_SDIO_IRQ_GPIO
 ccflags-$(CONFIG_WILC1000_SPI) += -DWILC_SPI
 
-ccflags-y += -DSTA_FIRMWARE=\"atmel/wilc1000_fw.bin\" \
-		-DAP_FIRMWARE=\"atmel/wilc1000_ap_fw.bin\" \
-		-DP2P_CONCURRENCY_FIRMWARE=\"atmel/wilc1000_p2p_fw.bin\"
+ccflags-y += -DSTA_FIRMWARE
+ccflags-y += -DSTA_FIRMWARE_1002=\"atmel/WILC1002_firmware.bin\" \
+		-DSTA_FIRMWARE_1003=\"atmel/WILC1003_firmware.bin\"
 
 ccflags-y += -I$(src)/ -DEXPORT_SYMTAB  -D__CHECK_ENDIAN__ -DWILC_ASIC_A0 \
 		-DPLL_WORKAROUND -DCONNECT_DIRECT  -DAGING_ALG \
@@ -17,6 +17,8 @@ ccflags-y += -I$(src)/ -DEXPORT_SYMTAB  -D__CHECK_ENDIAN__ -DWILC_ASIC_A0 \
 		-DWILC_PLATFORM=WILC_LINUXKERNEL -Wno-unused-function -DUSE_WIRELESS \
 		-DSTATIC_MACADDRESS -DWILC_DEBUGFS
 ccflags-y += -DTCP_ACK_FILTER
+ccflags-y += -DTCP_ENHANCEMENTS 
+
 ccflags-y += -DHAS_SUSPEND_RESUME
 
 ccflags-$(CONFIG_WILC1000_PREALLOCATE_DURING_SYSTEM_BOOT) += -DMEMORY_STATIC \
@@ -36,7 +38,7 @@ wilc1000-objs := wilc_wfi_netdevice.o wilc_wfi_cfgoperations.o linux_wlan.o linu
 wilc1000-$(CONFIG_WILC1000_SDIO) += linux_wlan_sdio.o
 wilc1000-$(CONFIG_WILC1000_SPI) += linux_wlan_spi.o
 
-WILC1000_SRC_VERSION = 11.0
+WILC1000_SRC_VERSION = 12.2
 PATCHLEVEL = 1
 WILC1000_FW_VERSION = 0
 

@@ -678,9 +678,9 @@ static WILC_Sint32 Handle_SetWfiDrvHandler(tstrHostIfSetDrvHandler* pstrHostIfSe
 	
 	/*prepare configuration packet*/
 	strWID.u16WIDid = (WILC_Uint16)WID_SET_DRV_HANDLER;
-	strWID.enuWIDtype= WID_INT;
-	strWID.ps8WidVal = (WILC_Sint8*)&(pstrHostIfSetDrvHandler->u32Address);
-	strWID.s32ValueSize = sizeof(WILC_Uint32);
+	strWID.enuWIDtype= WID_STR;
+	strWID.ps8WidVal = (WILC_Sint8*)(pstrHostIfSetDrvHandler);
+	strWID.s32ValueSize = sizeof(tstrHostIfSetDrvHandler);
 
 	/*Sending Cfg*/
 	
@@ -3647,6 +3647,13 @@ static void Handle_GetLinkspeed(void* drvHandler)
 	
 }
 
+#ifdef TCP_ENHANCEMENTS
+#define TCP_ACK_FILTER_LINK_SPEED_THRESH 54
+#define DEFAULT_LINK_SPEED 72
+extern void Enable_TCP_ACK_Filter(WILC_Bool value);
+#endif
+
+tstrStatistics gDummyStatistics;
 WILC_Sint32 Handle_GetStatistics(void * drvHandler,tstrStatistics* pstrStatistics)
 {
 	tstrWID strWIDList[5];
@@ -3689,7 +3696,20 @@ WILC_Sint32 Handle_GetStatistics(void * drvHandler,tstrStatistics* pstrStatistic
 		PRINT_ER("Failed to send scan paramters config packet\n");
 		//WILC_ERRORREPORT(s32Error, s32Error);
 	}
-	WILC_SemaphoreRelease(&hWaitResponse, NULL);
+	#ifdef TCP_ENHANCEMENTS
+	if((pstrStatistics->u8LinkSpeed > TCP_ACK_FILTER_LINK_SPEED_THRESH) && (pstrStatistics->u8LinkSpeed != DEFAULT_LINK_SPEED))
+	{
+		//printk("Enable TCP filter\n");
+		Enable_TCP_ACK_Filter(WILC_TRUE);
+	}
+	else if( pstrStatistics->u8LinkSpeed != DEFAULT_LINK_SPEED)
+	{
+		//printk("Disable TCP filter %d\n",pstrStatistics->u8LinkSpeed);
+		Enable_TCP_ACK_Filter(WILC_FALSE);
+	}
+	#endif
+	if(pstrStatistics != &gDummyStatistics)
+		WILC_SemaphoreRelease(&hWaitResponse, NULL);
 	return 0;
 	
 }
@@ -6397,7 +6417,7 @@ WILC_Sint32 host_int_wait_msg_queue_idle(void)
 	
 }
 
-WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address)
+WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address,WILC_Uint8 u8MacIndex)
 {
 	WILC_Sint32 s32Error = WILC_SUCCESS;
 
@@ -6409,6 +6429,7 @@ WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address)
 	WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
 	strHostIFmsg.u16MsgId = HOST_IF_MSG_SET_WFIDRV_HANDLER;
 	strHostIFmsg.uniHostIFmsgBody.strHostIfSetDrvHandler.u32Address=u32address;
+	strHostIFmsg.uniHostIFmsgBody.strHostIfSetDrvHandler.u8MacIndex = u8MacIndex;
 	//strHostIFmsg.drvHandler=hWFIDrv;
 
 	s32Error = WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
@@ -6756,8 +6777,9 @@ WILC_Sint32 host_int_get_statistics(WILC_WFIDrvHandle hWFIDrv, tstrStatistics* p
 		PRINT_ER("Failed to send get host channel param's message queue ");
 		return WILC_FAIL;
 		}
-
-	WILC_SemaphoreAcquire(&hWaitResponse, NULL);	
+	/*if the dummy sta. don't wait fore the result */
+	if(pstrStatistics != &gDummyStatistics)
+		WILC_SemaphoreAcquire(&hWaitResponse, NULL);	
 	return s32Error;
 }
 
@@ -7081,22 +7103,8 @@ void GetPeriodicRSSI(void * pvArg)
 
 	if(pstrWFIDrv->enuHostIFstate == HOST_IF_CONNECTED)
 	{	
-		WILC_Sint32 s32Error = WILC_SUCCESS;	
-		tstrHostIFmsg strHostIFmsg;
-		
-		/* prepare the Get RSSI Message */
-		WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
-
-		strHostIFmsg.u16MsgId = HOST_IF_MSG_GET_RSSI;
-		strHostIFmsg.drvHandler=pstrWFIDrv;
-
-		/* send the message */
-		s32Error = 	WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
-		if(s32Error)
-		{
-			PRINT_ER("Failed to send get host channel param's message queue ");
-			return;
-		}
+			
+		host_int_get_statistics((WILC_WFIDrvHandle)pstrWFIDrv,&gDummyStatistics);
 	}
 	WILC_TimerStart(&(g_hPeriodicRSSI),5000,(void*)pstrWFIDrv,NULL);
 }
@@ -7385,7 +7393,7 @@ WILC_Sint32 host_int_deinit(WILC_WFIDrvHandle hWFIDrv)
 	WILC_TimerDestroy(&(pstrWFIDrv->hRemainOnChannel), WILC_NULL);
 	#endif
 	
-	host_int_set_wfi_drv_handler((WILC_Uint32)WILC_NULL);
+	host_int_set_wfi_drv_handler((WILC_Uint32)WILC_NULL,0);
 	WILC_SemaphoreAcquire(&hSemDeinitDrvHandle, NULL);
 
 	
@@ -8155,6 +8163,11 @@ WILC_Sint32 host_int_set_power_mgmt(WILC_WFIDrvHandle hWFIDrv, WILC_Bool bIsEnab
 	tstrWILC_WFIDrv * pstrWFIDrv = (tstrWILC_WFIDrv *)hWFIDrv;
 	tstrHostIFmsg strHostIFmsg;
 	tstrHostIfPowerMgmtParam* pstrPowerMgmtParam = &strHostIFmsg.uniHostIFmsgBody.strPowerMgmtparam;
+	/*if the two interface are connected and it is required to enable PS , neglect the request*/
+	if(linux_wlan_get_num_conn_ifcs() == 2 && bIsEnabled)
+	{
+		return 0;
+	}
 
 	PRINT_INFO(HOSTINF_DBG,"\n\n>> Setting PS to %d << \n\n",bIsEnabled);
 

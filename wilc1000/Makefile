@@ -8,8 +8,8 @@ ccflags-$(CONFIG_WILC1000_HW_OOB_INTR) += -DWILC_SDIO_IRQ_GPIO
 ccflags-$(CONFIG_WILC1000_SPI) += -DWILC_SPI
 
 ccflags-y += -DSTA_FIRMWARE
-ccflags-y += -DSTA_FIRMWARE_1002=\"atmel/WILC1002_firmware.bin\" \
-		-DSTA_FIRMWARE_1003=\"atmel/WILC1003_firmware.bin\"
+ccflags-y += -DSTA_FIRMWARE_1002=\"atmel/wilc1000a_fw_v12.2.bin\" \
+		-DSTA_FIRMWARE_1003=\"atmel/wilc1000b_fw_v12.2.bin\"
 
 ccflags-y += -I$(src)/ -DEXPORT_SYMTAB  -D__CHECK_ENDIAN__ -DWILC_ASIC_A0 \
 		-DPLL_WORKAROUND -DCONNECT_DIRECT  -DAGING_ALG \

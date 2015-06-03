@@ -8,8 +8,8 @@ ccflags-$(CONFIG_WILC1000_HW_OOB_INTR) += -DWILC_SDIO_IRQ_GPIO
 ccflags-$(CONFIG_WILC1000_SPI) += -DWILC_SPI
 
 ccflags-y += -DSTA_FIRMWARE
-ccflags-y += -DSTA_FIRMWARE_1002=\"atmel/wilc1000a_fw_v12.2.bin\" \
-		-DSTA_FIRMWARE_1003=\"atmel/wilc1000b_fw_v12.2.bin\"
+ccflags-y += -DSTA_FIRMWARE_1002=\"atmel/wilc1000a_fw_v12.3.bin\" \
+		-DSTA_FIRMWARE_1003=\"atmel/wilc1000b_fw_v12.3.bin\"
 
 ccflags-y += -I$(src)/ -DEXPORT_SYMTAB  -D__CHECK_ENDIAN__ -DWILC_ASIC_A0 \
 		-DPLL_WORKAROUND -DCONNECT_DIRECT  -DAGING_ALG \
@@ -38,7 +38,7 @@ wilc1000-objs := wilc_wfi_netdevice.o wilc_wfi_cfgoperations.o linux_wlan.o linu
 wilc1000-$(CONFIG_WILC1000_SDIO) += linux_wlan_sdio.o
 wilc1000-$(CONFIG_WILC1000_SPI) += linux_wlan_spi.o
 
-WILC1000_SRC_VERSION = 12.2
+WILC1000_SRC_VERSION = 12.3
 PATCHLEVEL = 1
 WILC1000_FW_VERSION = 0
 

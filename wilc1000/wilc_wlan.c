@@ -357,7 +357,6 @@ struct Ack_session_info * Alloc_head=NULL;
 
 #define MAX_TCP_SESSION		25
 #define MAX_PENDING_ACKS	256
-#define MAX_PENDING_COUNT	230
 Ack_session_info_t 	Acks_keep_track_info[2*MAX_TCP_SESSION];
 Pending_Acks_info_t 	Pending_Acks_info[MAX_PENDING_ACKS];
 
@@ -414,7 +413,7 @@ static int inline Update_TCP_track_session(uint32_t index,uint32_t Ack)
 static int inline add_TCP_Pending_Ack(uint32_t Ack,uint32_t Session_index,struct txq_entry_t  * txqe)
 {
 	Statisitcs_totalAcks++;
-	if(Pending_Acks < MAX_PENDING_COUNT)
+	if((PendingAcks_arrBase+Pending_Acks)<MAX_PENDING_ACKS)
 	{
 		Pending_Acks_info[PendingAcks_arrBase+Pending_Acks].ack_num=Ack;
 		Pending_Acks_info[PendingAcks_arrBase+Pending_Acks].txqe=txqe;

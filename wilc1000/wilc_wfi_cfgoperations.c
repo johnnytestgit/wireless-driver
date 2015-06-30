@@ -844,7 +844,7 @@ static int WILC_WFI_CfgScan(struct wiphy *wiphy,struct net_device *dev, struct c
 	priv = wiphy_priv(wiphy);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0)
-	PRINT_D(CORECONFIG_DBG, "Scan on netdev [%p] host if [%x]\n",dev, (WILC_Uint32)priv->hWILCWFIDrv);
+	PRINT_D(CFG80211_DBG, "Scan on netdev [%p] host if [%x]\n",dev, (WILC_Uint32)priv->hWILCWFIDrv);
 #endif
 
 	/*if(connecting)
@@ -943,7 +943,7 @@ static int WILC_WFI_CfgScan(struct wiphy *wiphy,struct net_device *dev, struct c
 	if(s32Error != WILC_SUCCESS)
 	{
 		s32Error = -EBUSY;
-		PRINT_WRN(CFG80211_DBG,"Device is busy: Error(%d)\n",s32Error);
+		PRINT_ER(CFG80211_DBG,"Device is busy: Error(%d)\n",s32Error);
 	}
 
 	return s32Error;
@@ -3481,9 +3481,7 @@ static int WILC_WFI_change_virt_intf(struct wiphy *wiphy,struct net_device *dev,
 			break;
 	
 		case NL80211_IFTYPE_AP:
-		
-
-			
+			bEnablePS = WILC_FALSE;
 			dev->ieee80211_ptr->iftype = type;
 			priv->wdev->iftype = type;
 			nic->iftype = AP_MODE;
@@ -3572,7 +3570,8 @@ static int WILC_WFI_start_ap(struct wiphy *wiphy, struct net_device *dev,
 		PRINT_ER("Error in setting channel\n");
 #endif
 	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[nic->u8IfIdx].aSrcAddress,AP_MODE);
-	
+	/*disable PS  in case of AP*/
+	host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_add_beacon(	priv->hWILCWFIDrv,
 									settings->beacon_interval,
@@ -3698,7 +3697,7 @@ static int WILC_WFI_add_beacon(struct wiphy *wiphy, struct net_device *dev,
 	PRINT_D(HOSTAPD_DBG,"Interval = %d \n DTIM period = %d\n Head length = %d Tail length = %d\n",info->interval , info->dtim_period,info->head_len,info->tail_len );
 
 	linux_wlan_set_bssid(dev,g_linux_wlan->strInterfaceInfo[nic->u8IfIdx].aSrcAddress,AP_MODE);
-
+	host_int_set_power_mgmt(priv->hWILCWFIDrv, 0, 0);
 	#ifndef WILC_FULLY_HOSTING_AP
 	s32Error = host_int_add_beacon(priv->hWILCWFIDrv, info->interval,
 									 info->dtim_period,

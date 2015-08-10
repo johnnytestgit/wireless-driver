@@ -1269,7 +1269,7 @@ static int wilc_wlan_handle_txq(uint32_t* pu32TxqCount)
 #endif
 				else{
 					buffer_offset = HOST_HDR_OFFSET;
-					}
+				}
 
 				memcpy(&txb[offset+buffer_offset], tqe->buffer, tqe->buffer_size);
 				offset += vmm_sz;

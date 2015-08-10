@@ -3,7 +3,7 @@ obj-$(CONFIG_WILC1000_PREALLOCATE_DURING_SYSTEM_BOOT) += wilc_exported_buf.o
 
 
 ccflags-$(CONFIG_WILC1000_SDIO) += -DWILC_SDIO -DCOMPLEMENT_BOOT -DWILC_OPTIMIZE_SLEEP_INT
- 
+
 ccflags-$(CONFIG_WILC1000_HW_OOB_INTR) += -DWILC_SDIO_IRQ_GPIO
 ccflags-$(CONFIG_WILC1000_SPI) += -DWILC_SPI
 
@@ -39,8 +39,8 @@ wilc1000-objs := wilc_wfi_netdevice.o wilc_wfi_cfgoperations.o linux_wlan.o linu
 wilc1000-$(CONFIG_WILC1000_SDIO) += linux_wlan_sdio.o
 wilc1000-$(CONFIG_WILC1000_SPI) += linux_wlan_spi.o
 
-WILC1000_SRC_VERSION = 12.5
-PATCHLEVEL = 1
+WILC1000_SRC_VERSION = 13.0
+PATCHLEVEL = 2
 WILC1000_FW_VERSION = 0
 
 ccflags-y += -D__DRIVER_VERSION__=\"$(WILC1000_SRC_VERSION).$(PATCHLEVEL)\"

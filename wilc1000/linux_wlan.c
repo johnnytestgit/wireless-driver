@@ -1178,6 +1178,10 @@ static int linux_wlan_init_test_config(struct net_device *dev, linux_wlan_t* p_n
 	pstrWFIDrv = (tstrWILC_WFIDrv *)priv->hWILCWFIDrv;
 	PRINT_D(INIT_DBG, "Host = %x\n",(WILC_Uint32)pstrWFIDrv);
 
+	#ifndef STATIC_MACADDRESS
+	host_int_get_MacAddress(priv->hWILCWFIDrv, mac_add);
+	#endif
+	PRINT_D(INIT_DBG,"MAC address is : %pM\n", mac_add);
 	chipid = wilc_get_chipid(0);
 
 	
@@ -2152,17 +2156,11 @@ int mac_open(struct net_device *ndev){
 		return  ret;
 	}
 
-	
-	status = host_int_get_MacAddress(priv->hWILCWFIDrv, mac_add);
-	PRINT_D(INIT_DBG, "Mac address: %x:%x:%x:%x:%x:%x\n", mac_add[0], mac_add[1], mac_add[2],
-															mac_add[3], mac_add[4], mac_add[5]);
-
 	//loop through the NUM of supported devices and set the MAC address
 	for(i=0;i<g_linux_wlan->u8NoIfcs;i++)
 	{
 		if(ndev == g_linux_wlan->strInterfaceInfo[i].wilc_netdev)
 		{
-			memcpy(g_linux_wlan->strInterfaceInfo[i].aSrcAddress, mac_add, ETH_ALEN);
 			g_linux_wlan->strInterfaceInfo[i].drvHandler = (WILC_Uint32)priv->hWILCWFIDrv;
 			if(nic->iftype == AP_MODE)
 				host_int_set_wfi_drv_handler(priv->hWILCWFIDrv,0);
@@ -2175,12 +2173,12 @@ int mac_open(struct net_device *ndev){
 				if(memcmp(g_linux_wlan->strInterfaceInfo[i^1].aBSSID, 
 				g_linux_wlan->strInterfaceInfo[i].aSrcAddress, 6))
 				{
-					/*if the other interface is connected as station , set mac 1*/
+					/*if the other interface is connected as station , set mac 0*/
 					host_int_set_wfi_drv_handler(priv->hWILCWFIDrv,0);
 				}
 				else
 				{
-					/*if the other interface is connected as AP , set mac 0*/
+					/*if the other interface is connected as AP , set mac 1*/
 					host_int_set_wfi_drv_handler(priv->hWILCWFIDrv,1);				
 				}
 			}
@@ -2190,7 +2188,9 @@ int mac_open(struct net_device *ndev){
 			break;
 		}		
 	}
-
+	status = host_int_get_MacAddress(priv->hWILCWFIDrv, mac_add);
+	PRINT_D(INIT_DBG, "Mac address: %pM\n", mac_add);
+	memcpy(g_linux_wlan->strInterfaceInfo[i].aSrcAddress, mac_add, ETH_ALEN);
 	/* TODO: get MAC address whenever the source is EPROM - hardcoded and copy it to ndev*/
 	memcpy(ndev->dev_addr, g_linux_wlan->strInterfaceInfo[i].aSrcAddress, ETH_ALEN);
 

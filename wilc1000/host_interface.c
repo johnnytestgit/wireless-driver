@@ -56,8 +56,10 @@ extern WILC_Uint8 g_wilc_initialized;
 #define HOST_IF_MSG_DEL_BA_SESSION		((WILC_Uint16)34)
 #define HOST_IF_MSG_Q_IDLE		((WILC_Uint16)35)
 #define HOST_IF_MSG_DEL_ALL_STA  ((WILC_Uint16)36)
-#define HOST_IF_MSG_DEL_ALL_RX_BA_SESSIONS		((WILC_Uint16)34)
+#define HOST_IF_MSG_DEL_ALL_RX_BA_SESSIONS		((WILC_Uint16)37)
 
+#define HOST_IF_MSG_SET_TX_POWER	((WILC_Uint16)38)
+#define HOST_IF_MSG_GET_TX_POWER	((WILC_Uint16)39)
 #define HOST_IF_MSG_EXIT					((WILC_Uint16)100)
 
 #define HOST_IF_SCAN_TIMEOUT		4000
@@ -432,6 +434,10 @@ typedef struct
 	WILC_Uint8 mac[6];
 
 }tstrHostIfStaInactiveT;
+typedef struct 
+{
+	WILC_Uint8 u8TxPwr;
+}tstrHostIFTxPwr;
 /**/
 /*!
 *  @union 		tuniHostIFmsgBody
@@ -475,6 +481,7 @@ typedef union _tuniHostIFmsgBody
 	#endif
 	WILC_Char * 				pUserData;
 	tstrHostIFDelAllSta       strHostIFDelAllSta;	
+	tstrHostIFTxPwr strHostIFTxPwr;
 } tuniHostIFmsgBody;
 
 /*!
@@ -4727,6 +4734,54 @@ static WILC_Sint32 Handle_DelAllRxBASessions(void * drvHandler, tstrHostIfBASess
 
 }
 
+static WILC_Sint32 Handle_SetTxPwr(void * drvHandler, WILC_Uint8 u8TxPwr)
+{	
+	WILC_Sint32 s32Error = WILC_SUCCESS;
+	tstrWID strWID;
+	tstrWILC_WFIDrv * pstrWFIDrv = (tstrWILC_WFIDrv *)drvHandler;
+
+	strWID.u16WIDid = (WILC_Uint16)WID_TX_POWER;
+	strWID.enuWIDtype = WID_CHAR;
+	strWID.ps8WidVal = (WILC_Sint8*)&u8TxPwr;
+	strWID.s32ValueSize = sizeof(WILC_Char);	
+
+	s32Error = SendConfigPkt(SET_CFG, &strWID, 1, WILC_TRUE,(WILC_Uint32)pstrWFIDrv);
+
+	if(s32Error)
+	{
+		PRINT_D(HOSTINF_DBG,"Failed to switch log terminal\n");
+		WILC_ERRORREPORT(s32Error,WILC_INVALID_STATE);
+	}
+
+	WILC_CATCH(s32Error)
+	{
+
+	}
+
+	return s32Error;
+}
+
+static WILC_Sint32 Handle_GetTxPwr(void * drvHandler, WILC_Uint8* pu8TxPwr)
+{
+	WILC_Sint32 s32Error = WILC_SUCCESS;
+	tstrWID strWID;
+	tstrWILC_WFIDrv * pstrWFIDrv = (tstrWILC_WFIDrv *)drvHandler;
+	
+	strWID.u16WIDid = WID_TX_POWER;
+	strWID.enuWIDtype= WID_CHAR;
+	strWID.s32ValueSize = sizeof(WILC_Char);
+	strWID.ps8WidVal = (WILC_Sint8*)(pu8TxPwr);
+
+	s32Error = SendConfigPkt(GET_CFG, &strWID, 1, WILC_TRUE,(WILC_Uint32)pstrWFIDrv);
+		
+	if(s32Error)
+	{
+		PRINT_ER("Failed to send scan paramters config packet\n");
+		//WILC_ERRORREPORT(s32Error, s32Error);
+	}
+	WILC_SemaphoreRelease(&hWaitResponse, NULL);
+	return s32Error; 
+}
 /**
 *  @brief hostIFthread
 *  @details 	    Main thread to handle message queue requests 
@@ -5015,6 +5070,17 @@ static void hostIFthread(void* pvArg)
 				break;
 			}
 
+			case HOST_IF_MSG_SET_TX_POWER:
+			{
+				Handle_SetTxPwr(strHostIFmsg.drvHandler,strHostIFmsg.uniHostIFmsgBody.strHostIFTxPwr.u8TxPwr);
+				break;
+			}
+
+			case HOST_IF_MSG_GET_TX_POWER:
+			{
+				Handle_GetTxPwr(strHostIFmsg.drvHandler,&strHostIFmsg.uniHostIFmsgBody.strHostIFTxPwr.u8TxPwr);
+				break;
+			}
 			default:
 			{
 				PRINT_ER("[Host Interface] undefined Received Msg ID  \n");
@@ -6423,7 +6489,7 @@ WILC_Sint32 host_int_set_wfi_drv_handler(WILC_Uint32 u32address,WILC_Uint8 u8Mac
 
 	tstrHostIFmsg strHostIFmsg;
 
-
+	PRINT_INFO(HOSTINF_DBG,"set drv handle = %x , %d\n",u32address,u8MacIndex);
 	/* prepare the set driver handler message */
 	
 	WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
@@ -8695,3 +8761,57 @@ WILC_Sint32 host_int_get_ipaddress(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8* u16ipa
 
 }
 
+WILC_Sint32 host_int_set_tx_power(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8 tx_power)
+{
+	WILC_Sint32 s32Error = WILC_SUCCESS;
+	tstrWILC_WFIDrv * pstrWFIDrv = (tstrWILC_WFIDrv *)hWFIDrv;
+	tstrHostIFmsg strHostIFmsg;
+
+	if(pstrWFIDrv == WILC_NULL )
+	{
+		WILC_ERRORREPORT(s32Error,WILC_INVALID_ARGUMENT);
+	}
+
+	/* prepare the Key Message */
+	WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
+
+	strHostIFmsg.u16MsgId = HOST_IF_MSG_SET_TX_POWER;
+	strHostIFmsg.uniHostIFmsgBody.strHostIFTxPwr.u8TxPwr = tx_power;
+	strHostIFmsg.drvHandler=hWFIDrv;
+
+	/* send the message */
+	s32Error = WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
+	if(s32Error)
+		PRINT_ER(" Error in sending messagequeue: PMKID Info\n");
+
+	WILC_CATCH(s32Error)
+	{
+
+	}
+
+	return s32Error;
+}
+
+WILC_Sint32 host_int_get_tx_power(WILC_WFIDrvHandle hWFIDrv, WILC_Uint8 *tx_power)
+{
+	WILC_Sint32 s32Error = WILC_SUCCESS;	
+	tstrHostIFmsg strHostIFmsg;
+
+	
+	/* prepare the Get RSSI Message */
+	WILC_memset(&strHostIFmsg, 0, sizeof(tstrHostIFmsg));
+
+	strHostIFmsg.u16MsgId = HOST_IF_MSG_GET_TX_POWER;
+	strHostIFmsg.drvHandler=hWFIDrv;
+	/* send the message */
+	s32Error = 	WILC_MsgQueueSend(&gMsgQHostIF, &strHostIFmsg, sizeof(tstrHostIFmsg), WILC_NULL);
+	if(s32Error){
+		PRINT_ER("Failed to send get host channel param's message queue ");
+		return WILC_FAIL;
+		}
+
+	WILC_SemaphoreAcquire(&hWaitResponse, NULL);	
+
+	*tx_power = strHostIFmsg.uniHostIFmsgBody.strHostIFTxPwr.u8TxPwr;
+	return s32Error;
+}

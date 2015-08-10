@@ -4129,6 +4129,40 @@ void	WILC_WFI_wake_up(struct wiphy *wiphy, bool enabled)
 	printk("Set wake up = %d\n",enabled);
 }
 
+int WILC_WFI_set_tx_power(struct wiphy *wiphy,
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+	struct wireless_dev *wdev,
+	#endif
+    enum nl80211_tx_power_setting type, int mbm)
+{
+	WILC_Sint32 s32Error = WILC_SUCCESS;
+	WILC_Sint32 tx_power = MBM_TO_DBM(mbm);
+	struct WILC_WFI_priv* priv = wiphy_priv(wiphy);
+
+	PRINT_D(CFG80211_DBG, "Setting tx power to %d\n", tx_power);
+	if(tx_power < 0)
+		tx_power = 0;
+	else if(tx_power > 18)
+		tx_power = 18;
+	s32Error = host_int_set_tx_power(priv->hWILCWFIDrv,(WILC_Uint8)tx_power);
+
+	return s32Error;
+}
+int WILC_WFI_get_tx_power(struct wiphy *wiphy,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+	struct wireless_dev *wdev,
+#endif
+	int *dbm)
+{
+	WILC_Sint32 s32Error = WILC_SUCCESS;
+	struct WILC_WFI_priv* priv = wiphy_priv(wiphy);
+
+	s32Error = host_int_get_tx_power(priv->hWILCWFIDrv, (WILC_Uint8*)(dbm));
+	PRINT_D(CFG80211_DBG, "Got tx power %d\n", *dbm);
+
+	return s32Error;
+}
+
 #endif /*WILC_AP_EXTERNAL_MLME*/
 static struct cfg80211_ops WILC_WFI_cfg80211_ops = {
 
@@ -4209,7 +4243,8 @@ static struct cfg80211_ops WILC_WFI_cfg80211_ops = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 	.set_wakeup = WILC_WFI_wake_up,
 #endif
-
+	.set_tx_power = WILC_WFI_set_tx_power,
+	.get_tx_power = WILC_WFI_get_tx_power,
 };
 
 
@@ -4412,6 +4447,12 @@ struct wireless_dev* WILC_WFI_WiphyRegister(struct net_device *net)
 #endif
 #else
 	wdev->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_AP) | BIT(NL80211_IFTYPE_MONITOR);
+#endif
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,39)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,38)
+	wdev->wiphy->flags |= WIPHY_FLAG_SUPPORTS_SEPARATE_DEFAULT_KEYS;
+#endif
 #endif
 	wdev->iftype = NL80211_IFTYPE_STATION;
 
